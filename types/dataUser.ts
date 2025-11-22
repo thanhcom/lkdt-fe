@@ -30,3 +30,11 @@ export interface ApiResponse {
   messenger: string
   responseCode: number
 }
+
+export interface UserState {
+  user: DataUser | null
+  loading: boolean
+  error: string | null
+}
+
+

@@ -35,6 +35,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { useSelector } from "react-redux"
+import { RootState } from "@/store/store"
+import Loading from "@/components/Loading"
 
 // Định nghĩa kiểu dữ liệu ComponentItem
 export type ComponentItem = {
@@ -145,7 +148,8 @@ export default function Page() {
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = React.useState({})
-
+  const count = useSelector((state: RootState) => state.counter.value);
+  const user = useSelector((state: RootState) => state.user.user);
   // Fetch dữ liệu từ API có JWT
   React.useEffect(() => {
     const fetchData = async () => {
@@ -186,11 +190,13 @@ export default function Page() {
 
   const nameColumn = table.getColumn("name")
 
-  if (loading) return <div className="p-8">Loading...</div>
+  if (loading) return <Loading/>
   if (error) return <div className="p-8 text-red-500">Error: {error}</div>
 
   return (
     <div className="p-8">
+      <h1 className="text-xl">Count: {count}</h1>
+      <h1 className="text-xl">UserName: {user?.username}</h1>
       {/* Filter & Column visibility */}
       <div className="flex items-center py-4">
         <Input

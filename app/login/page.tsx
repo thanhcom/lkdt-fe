@@ -1,51 +1,52 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Card } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
-import Link from "next/link"
-import { login, LoginPayload, LoginResponse } from "@/app/services/auth/login"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import Link from "next/link";
+import { login, LoginPayload, LoginResponse } from "@/app/services/auth/login";
+import { useDispatch } from "react-redux";
 
 export default function LoginPage() {
-  const router = useRouter()
+  const router = useRouter();
 
-  const [username, setUsername] = useState("")
-  const [password, setPassword] = useState("")
-  const [remember, setRemember] = useState(false) // chỉ dùng FE
-  const [error, setError] = useState("")
-  const [loading, setLoading] = useState(false)
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [remember, setRemember] = useState(false); // chỉ dùng FE
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
     if (!username || !password) {
-      setError("Vui lòng nhập đầy đủ thông tin")
-      return
+      setError("Vui lòng nhập đầy đủ thông tin");
+      return;
     }
 
-    setError("")
-    setLoading(true)
+    setError("");
+    setLoading(true);
 
     try {
-      const payload: LoginPayload = { username, password, remember }
-      const data: LoginResponse = await login(payload)
-      console.log("Login success:", data)
+      const payload: LoginPayload = { username, password, remember };
+      const data: LoginResponse = await login(payload);
+      console.log("Login success:", data);
 
       // Lưu token vào localStorage
-      localStorage.setItem("token", data.token)
-      localStorage.setItem("refreshToken", data.refresh_token)
-      // Redirect về trang chính
-      router.push("/home")
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("refreshToken", data.refresh_token);
+      router.push("/home");
     } catch (err: any) {
-      setError(err.message || "Đăng nhập thất bại")
+      setError(err.message || "Đăng nhập thất bại");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50">
@@ -87,7 +88,10 @@ export default function LoginPage() {
               />
               <Label htmlFor="remember">Ghi nhớ đăng nhập</Label>
             </div>
-            <Link href="/forgot-password" className="text-sm text-blue-600 hover:underline">
+            <Link
+              href="/forgot-password"
+              className="text-sm text-blue-600 hover:underline"
+            >
               Quên mật khẩu?
             </Link>
           </div>
@@ -104,14 +108,22 @@ export default function LoginPage() {
         </div>
 
         <div className="flex flex-col gap-2">
-          <Button variant="outline" className="w-full" onClick={() => console.log("Login with Google")}>
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => console.log("Login with Google")}
+          >
             Đăng nhập với Google
           </Button>
-          <Button variant="outline" className="w-full" onClick={() => console.log("Login with Facebook")}>
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => console.log("Login with Facebook")}
+          >
             Đăng nhập với Facebook
           </Button>
         </div>
       </Card>
     </div>
-  )
+  );
 }
