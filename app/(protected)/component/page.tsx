@@ -148,9 +148,7 @@ export const columns: ColumnDef<ComponentItem>[] = [
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
               <Link
-                href={`/component/schemantic/${
-                  item.id
-                }?data=${encodeURIComponent(JSON.stringify(item))}`}
+                href={`/schemantic/${item.id}?data=${encodeURIComponent(JSON.stringify(item))}`}
               >
                 Schematic
               </Link>
@@ -171,6 +169,9 @@ export const columns: ColumnDef<ComponentItem>[] = [
 
 export default function Page() {
   const [data, setData] = React.useState<ComponentItem[]>([]);
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const [totalPages, setTotalPages] = React.useState(1);
+  const [totalElement, setTotalElement] = React.useState(1);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [sorting, setSorting] = React.useState<SortingState>([]);
@@ -193,7 +194,7 @@ export default function Page() {
         if (!token) throw new Error("No token found in localStorage");
 
         const res = await fetch(
-          "https://api-lkdt.thanhcom.site/components/all",
+          "https://api-lkdt.thanhcom.site/components/search",
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -201,6 +202,9 @@ export default function Page() {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = await res.json();
         setData(json.data); // <-- Lấy phần data
+        setData(json.data || []);
+        setTotalPages(json.pageInfo?.totalPage || 1);
+         setTotalElement(json.pageInfo?.totalElement || 0);
       } catch (err: any) {
         setError(err.message);
       } finally {
@@ -323,30 +327,20 @@ export default function Page() {
       </div>
 
       {/* Pagination */}
-      <div className="flex items-center justify-end space-x-2 py-4">
-        <div className="text-muted-foreground flex-1 text-sm">
-          {table.getFilteredSelectedRowModel().rows.length} of{" "}
-          {table.getFilteredRowModel().rows.length} row(s) selected.
-        </div>
-        <div className="space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            Next
-          </Button>
-        </div>
+      <div className="flex justify-end mt-4 gap-2">
+        <Button variant="outline" size="sm" disabled={currentPage <= 1} onClick={() => setCurrentPage((p) => p - 1)}>
+          Previous
+        </Button>
+        <Button variant="outline" size="sm" disabled={currentPage >= totalPages} onClick={() => setCurrentPage((p) => p + 1)}>
+          Next
+        </Button>
+        <span className="self-center ml-2">
+          [Trang {currentPage} / {totalPages}]  -  [{totalElement} Linh Kiện / Trang]
+        </span>
       </div>
+
+
+
       <h1 className="text-xl">Count: {count}</h1>
       <h1 className="text-xl">UserName: {user?.username}</h1>
     </div>
