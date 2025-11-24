@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import * as React from "react"
+import * as React from "react";
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -12,11 +12,11 @@ import {
   SortingState,
   useReactTable,
   VisibilityState,
-} from "@tanstack/react-table"
-import { ArrowUpDown, ChevronDown, MoreHorizontal } from "lucide-react"
+} from "@tanstack/react-table";
+import { ArrowUpDown, ChevronDown, MoreHorizontal } from "lucide-react";
 
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -25,8 +25,8 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -34,24 +34,26 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { useSelector } from "react-redux"
-import { RootState } from "@/store/store"
-import Loading from "@/components/Loading"
+} from "@/components/ui/table";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store/store";
+import Loading from "@/components/Loading";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 // Định nghĩa kiểu dữ liệu ComponentItem
 export type ComponentItem = {
-  id: number
-  name: string
-  type: string
-  specification: string
-  manufacturer: string
-  packageField: string
-  unit: string
-  stockQuantity: number
-  location: string
-  createdAt: string
-}
+  id: number;
+  name: string;
+  type: string;
+  specification: string;
+  manufacturer: string;
+  packageField: string;
+  unit: string;
+  stockQuantity: number;
+  location: string;
+  createdAt: string;
+};
 
 // Columns cho table
 export const columns: ColumnDef<ComponentItem>[] = [
@@ -61,7 +63,7 @@ export const columns: ColumnDef<ComponentItem>[] = [
       <Checkbox
         checked={table.getIsAllPageRowsSelected()}
         ref={(el) => {
-          if (el) el.indeterminate = table.getIsSomePageRowsSelected()
+          if (el) el.indeterminate = table.getIsSomePageRowsSelected();
         }}
         onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
         aria-label="Select all"
@@ -71,7 +73,7 @@ export const columns: ColumnDef<ComponentItem>[] = [
       <Checkbox
         checked={row.getIsSelected()}
         ref={(el) => {
-          if (el) el.indeterminate = row.getIsSomeSelected()
+          if (el) el.indeterminate = row.getIsSomeSelected();
         }}
         onCheckedChange={(value) => row.toggleSelected(!!value)}
         aria-label="Select row"
@@ -102,7 +104,9 @@ export const columns: ColumnDef<ComponentItem>[] = [
   {
     accessorKey: "stockQuantity",
     header: "Stock Qty",
-    cell: ({ row }) => <div className="text-right">{row.getValue("stockQuantity")}</div>,
+    cell: ({ row }) => (
+      <div className="text-right">{row.getValue("stockQuantity")}</div>
+    ),
   },
   {
     accessorKey: "location",
@@ -117,7 +121,7 @@ export const columns: ColumnDef<ComponentItem>[] = [
     id: "actions",
     enableHiding: false,
     cell: ({ row }) => {
-      const item = row.original
+      const item = row.original;
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -127,52 +131,84 @@ export const columns: ColumnDef<ComponentItem>[] = [
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuLabel onClick={()=>alert('ok' + item.name)}>Actions</DropdownMenuLabel>
-            <DropdownMenuItem onClick={() => navigator.clipboard.writeText(String(item.id))}>
+            <DropdownMenuLabel onClick={() => alert("ok" + item.name)}>
+              Actions
+            </DropdownMenuLabel>
+            <DropdownMenuItem
+              onClick={() => navigator.clipboard.writeText(String(item.id))}
+            >
               Copy ID
             </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href={`/component/${item.id}/edit`}>Edit</Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href={`/component/${item.id}/delete`}>Delete</Link>
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>View Details</DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link
+                href={`/component/schemantic/${
+                  item.id
+                }?data=${encodeURIComponent(JSON.stringify(item))}`}
+              >
+                Schematic
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href={`/component`}>Transaction</Link>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link href={`/component/viewdetail`}>View Detail</Link>
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-      )
+      );
     },
   },
-]
+];
 
 export default function Page() {
-  const [data, setData] = React.useState<ComponentItem[]>([])
-  const [loading, setLoading] = React.useState(false)
-  const [error, setError] = React.useState<string | null>(null)
-  const [sorting, setSorting] = React.useState<SortingState>([])
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
-  const [rowSelection, setRowSelection] = React.useState({})
+  const [data, setData] = React.useState<ComponentItem[]>([]);
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+  const [sorting, setSorting] = React.useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
+    []
+  );
+  const [columnVisibility, setColumnVisibility] =
+    React.useState<VisibilityState>({});
+  const [rowSelection, setRowSelection] = React.useState({});
   const count = useSelector((state: RootState) => state.counter.value);
   const user = useSelector((state: RootState) => state.user.user);
+  const router = useRouter();
   // Fetch dữ liệu từ API có JWT
   React.useEffect(() => {
     const fetchData = async () => {
-      setLoading(true)
-      setError(null)
+      setLoading(true);
+      setError(null);
       try {
-        const token = localStorage.getItem("token")
-        if (!token) throw new Error("No token found in localStorage")
+        const token = localStorage.getItem("token");
+        if (!token) throw new Error("No token found in localStorage");
 
-        const res = await fetch("https://api-lkdt.thanhcom.site/components/all", {
-          headers: { Authorization: `Bearer ${token}` },
-        })
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        const json = await res.json()
-        setData(json.data) // <-- Lấy phần data
+        const res = await fetch(
+          "https://api-lkdt.thanhcom.site/components/all",
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        setData(json.data); // <-- Lấy phần data
       } catch (err: any) {
-        setError(err.message)
+        setError(err.message);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
-    fetchData()
-  }, [])
+    };
+    fetchData();
+  }, []);
 
   const table = useReactTable({
     data,
@@ -186,17 +222,15 @@ export default function Page() {
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
     state: { sorting, columnFilters, columnVisibility, rowSelection },
-  })
+  });
 
-  const nameColumn = table.getColumn("name")
+  const nameColumn = table.getColumn("name");
 
-  if (loading) return <Loading/>
-  if (error) return <div className="p-8 text-red-500">Error: {error}</div>
+  if (loading) return <Loading />;
+  if (error) return <div className="p-8 text-red-500">Error: {error}</div>;
 
   return (
     <div className="p-8">
-      <h1 className="text-xl">Count: {count}</h1>
-      <h1 className="text-xl">UserName: {user?.username}</h1>
       {/* Filter & Column visibility */}
       <div className="flex items-center py-4">
         <Input
@@ -205,6 +239,13 @@ export default function Page() {
           onChange={(e) => nameColumn?.setFilterValue(e.target.value)}
           className="max-w-sm"
         />
+        <Button
+          variant="outline"
+          className="ml-2"
+          onClick={() => router.push("/component/create")}
+        >
+          Thêm Linh Kiện
+        </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="ml-auto">
@@ -220,7 +261,9 @@ export default function Page() {
                   key={column.id}
                   className="capitalize"
                   checked={column.getIsVisible()}
-                  onCheckedChange={() => column.toggleVisibility(!column.getIsVisible())}
+                  onCheckedChange={() =>
+                    column.toggleVisibility(!column.getIsVisible())
+                  }
                 >
                   {column.id}
                 </DropdownMenuCheckboxItem>
@@ -239,7 +282,10 @@ export default function Page() {
                   <TableHead key={header.id}>
                     {header.isPlaceholder
                       ? null
-                      : flexRender(header.column.columnDef.header, header.getContext())}
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
                   </TableHead>
                 ))}
               </TableRow>
@@ -248,17 +294,26 @@ export default function Page() {
           <TableBody>
             {table.getRowModel().rows.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
+                <TableRow
+                  key={row.id}
+                  data-state={row.getIsSelected() && "selected"}
+                >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
                     </TableCell>
                   ))}
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center"
+                >
                   No results.
                 </TableCell>
               </TableRow>
@@ -292,6 +347,8 @@ export default function Page() {
           </Button>
         </div>
       </div>
+      <h1 className="text-xl">Count: {count}</h1>
+      <h1 className="text-xl">UserName: {user?.username}</h1>
     </div>
-  )
+  );
 }
