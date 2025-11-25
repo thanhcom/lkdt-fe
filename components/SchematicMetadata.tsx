@@ -2,24 +2,15 @@
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import React from "react";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store/store";
 
-interface MetadataProps {
-  data: {
-    id: number;
-    name: string;
-    type?: string;
-    manufacturer?: string;
-    packageField?: string;
-    unit?: string;
-    stockQuantity?: number;
-    location?: string;
-    createdAt?: string;
-  };
-}
+const SchematicMetadata: React.FC = () => {
+  const component = useSelector((state: RootState) => state.component.component);
 
-const SchematicMetadata: React.FC<MetadataProps> = ({ data }) => {
+  if (!component) return null; // fallback nếu chưa có component
+
   return (
     <Card className="mb-6 shadow-lg border border-gray-200">
       <CardContent className="p-6">
@@ -28,55 +19,45 @@ const SchematicMetadata: React.FC<MetadataProps> = ({ data }) => {
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm text-gray-700">
           <p>
-            <strong>Tên linh kiện:</strong> {data.name}
+            <strong>Tên linh kiện:</strong> {component.name}
           </p>
-          {data.type && (
+          {component.type && (
             <p>
-              <strong>Loại:</strong> {data.type}
+              <strong>Loại:</strong> {component.type}
             </p>
           )}
-          {data.manufacturer && (
+          {component.manufacturer && (
             <p>
-              <strong>Hãng sản xuất:</strong> {data.manufacturer}
+              <strong>Hãng sản xuất:</strong> {component.manufacturer}
             </p>
           )}
-          {data.packageField && (
+          {component.packageField && (
             <p>
-              <strong>Package:</strong> {data.packageField}
+              <strong>Package:</strong> {component.packageField}
             </p>
           )}
-          {data.unit && (
+          {component.unit && (
             <p>
-              <strong>Đơn vị:</strong> {data.unit}
+              <strong>Đơn vị:</strong> {component.unit}
             </p>
           )}
-          {data.stockQuantity !== undefined && (
+          {component.stockQuantity !== undefined && (
             <p>
-              <strong>Tồn kho:</strong> {data.stockQuantity}
+              <strong>Tồn kho:</strong> {component.stockQuantity}
             </p>
           )}
-          {data.location && (
+          {component.location && (
             <p>
-              <strong>Vị trí:</strong> {data.location}
+              <strong>Vị trí:</strong> {component.location}
             </p>
           )}
-          {data.createdAt && (
+          {component.createdAt && (
             <p>
               <strong>Ngày tạo:</strong>{" "}
-              {new Date(data.createdAt).toLocaleDateString("vi-VN")}
+              {new Date(component.createdAt).toLocaleDateString("vi-VN")}
             </p>
           )}
         </div>
-        {/*
-        {data.id && (
-          <Button
-            className="mt-4 w-full"
-            onClick={() => window.location.href = `/component/${data.id}`}
-          >
-            Xem chi tiết linh kiện
-          </Button>
-        )}
-        */}
       </CardContent>
     </Card>
   );

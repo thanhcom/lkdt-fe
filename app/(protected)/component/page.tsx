@@ -22,8 +22,6 @@ import {
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
@@ -35,13 +33,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useSelector } from "react-redux";
-import { RootState } from "@/store/store";
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch, RootState } from "@/store/store";
 import Loading from "@/components/Loading";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { setComponent } from "@/store/slices/componentSlice";
 
-// Định nghĩa kiểu dữ liệu ComponentItem
+// Kiểu dữ liệu ComponentItem
 export type ComponentItem = {
   id: number;
   name: string;
@@ -55,123 +53,14 @@ export type ComponentItem = {
   createdAt: string;
 };
 
-// Columns cho table
-export const columns: ColumnDef<ComponentItem>[] = [
-  {
-    id: "select",
-    header: ({ table }) => (
-      <Checkbox
-        checked={table.getIsAllPageRowsSelected()}
-        ref={(el) => {
-          if (el) el.indeterminate = table.getIsSomePageRowsSelected();
-        }}
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label="Select all"
-      />
-    ),
-    cell: ({ row }) => (
-      <Checkbox
-        checked={row.getIsSelected()}
-        ref={(el) => {
-          if (el) el.indeterminate = row.getIsSomeSelected();
-        }}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-        aria-label="Select row"
-      />
-    ),
-    enableSorting: false,
-    enableHiding: false,
-  },
-  {
-    accessorKey: "name",
-    header: ({ column }) => (
-      <Button
-        variant="ghost"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-      >
-        Name <ArrowUpDown />
-      </Button>
-    ),
-  },
-  {
-    accessorKey: "type",
-    header: "Type",
-  },
-  {
-    accessorKey: "manufacturer",
-    header: "Manufacturer",
-  },
-  {
-    accessorKey: "stockQuantity",
-    header: "Stock Qty",
-    cell: ({ row }) => (
-      <div className="text-right">{row.getValue("stockQuantity")}</div>
-    ),
-  },
-  {
-    accessorKey: "location",
-    header: "Location",
-  },
-  {
-    accessorKey: "createdAt",
-    header: "Created At",
-    cell: ({ row }) => new Date(row.getValue("createdAt")).toLocaleString(),
-  },
-  {
-    id: "actions",
-    enableHiding: false,
-    cell: ({ row }) => {
-      const item = row.original;
-      return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel onClick={() => alert("ok" + item.name)}>
-              Actions
-            </DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(String(item.id))}
-            >
-              Copy ID
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href={`/component/${item.id}/edit`}>Edit</Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href={`/component/${item.id}/delete`}>Delete</Link>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link
-                href={`/schemantic/${item.id}?data=${encodeURIComponent(JSON.stringify(item))}`}
-              >
-                Schematic
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href={`/component`}>Transaction</Link>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link href={`/component/viewdetail`}>View Detail</Link>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      );
-    },
-  },
-];
-
 export default function Page() {
+  const dispatch = useDispatch<AppDispatch>();
+  const router = useRouter();
+
   const [data, setData] = React.useState<ComponentItem[]>([]);
   const [currentPage, setCurrentPage] = React.useState(1);
   const [totalPages, setTotalPages] = React.useState(1);
-  const [totalElement, setTotalElement] = React.useState(1);
+  const [totalElement, setTotalElement] = React.useState(0);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [sorting, setSorting] = React.useState<SortingState>([]);
@@ -181,39 +70,125 @@ export default function Page() {
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
+
   const count = useSelector((state: RootState) => state.counter.value);
   const user = useSelector((state: RootState) => state.user.user);
-  const router = useRouter();
-  // Fetch dữ liệu từ API có JWT
-  React.useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) throw new Error("No token found in localStorage");
 
-        const res = await fetch(
-          "https://api-lkdt.thanhcom.site/components/search",
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const json = await res.json();
-        setData(json.data); // <-- Lấy phần data
-        setData(json.data || []);
-        setTotalPages(json.pageInfo?.totalPage || 1);
-         setTotalElement(json.pageInfo?.totalElement || 0);
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, []);
+  // Columns được khai báo bên trong component để dùng dispatch và router
+  const columns: ColumnDef<ComponentItem>[] = React.useMemo(
+    () => [
+      {
+        id: "select",
+        header: ({ table }) => (
+          <Checkbox
+            checked={table.getIsAllPageRowsSelected()}
+            ref={(el) => {
+              if (el)
+                el && (el.indeterminate = table.getIsSomePageRowsSelected());
+            }}
+            onCheckedChange={(value) =>
+              table.toggleAllPageRowsSelected(!!value)
+            }
+            aria-label="Select all"
+          />
+        ),
+        cell: ({ row }) => (
+          <Checkbox
+            checked={row.getIsSelected()}
+            ref={(el) => {
+              if (el) el && (el.indeterminate = row.getIsSomeSelected());
+            }}
+            onCheckedChange={(value) => row.toggleSelected(!!value)}
+            aria-label="Select row"
+          />
+        ),
+        enableSorting: false,
+        enableHiding: false,
+      },
+      {
+        accessorKey: "name",
+        header: ({ column }) => (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Name <ArrowUpDown />
+          </Button>
+        ),
+      },
+      { accessorKey: "type", header: "Type" },
+      { accessorKey: "manufacturer", header: "Manufacturer" },
+      {
+        accessorKey: "stockQuantity",
+        header: "Stock Qty",
+        cell: ({ row }) => (
+          <div className="text-right">{row.getValue("stockQuantity")}</div>
+        ),
+      },
+      { accessorKey: "location", header: "Location" },
+      {
+        accessorKey: "createdAt",
+        header: "Created At",
+        cell: ({ row }) => new Date(row.getValue("createdAt")).toLocaleString(),
+      },
+      {
+        id: "actions",
+        enableHiding: false,
+        cell: ({ row }) => {
+          const item = row.original;
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="h-8 w-8 p-0">
+                  <span className="sr-only">Open menu</span>
+                  <MoreHorizontal />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem>
+                  <button
+                    className="w-full text-left"
+                    onClick={() => {
+                      // Dispatch action lưu component vào Redux
+                      dispatch(setComponent(item));
+                      // Chỉ chuyển hướng tới trang schematic, không cần query param
+                      router.push(`/schemantic/${item.id}`);
+                    }}
+                  >
+                    Schematic
+                  </button>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => navigator.clipboard.writeText(String(item.id))}
+                >
+                  Copy ID
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <button
+                    className="w-full text-left"
+                    onClick={() => router.push(`/component/${item.id}/edit`)}
+                  >
+                    Edit
+                  </button>
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <button
+                    className="w-full text-left"
+                    onClick={() => router.push(`/component/${item.id}/delete`)}
+                  >
+                    Delete
+                  </button>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          );
+        },
+      },
+    ],
+    [dispatch, router]
+  );
 
+  // React Table
   const table = useReactTable({
     data,
     columns,
@@ -228,7 +203,34 @@ export default function Page() {
     state: { sorting, columnFilters, columnVisibility, rowSelection },
   });
 
-  const nameColumn = table.getColumn("name");
+  // Fetch dữ liệu
+  React.useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) throw new Error("No token found");
+
+        const res = await fetch(
+          "https://api-lkdt.thanhcom.site/components/search",
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        setData(json.data || []);
+        setTotalPages(json.pageInfo?.totalPage || 1);
+        setTotalElement(json.pageInfo?.totalElement || 0);
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   if (loading) return <Loading />;
   if (error) return <div className="p-8 text-red-500">Error: {error}</div>;
@@ -239,8 +241,10 @@ export default function Page() {
       <div className="flex items-center py-4">
         <Input
           placeholder="Filter name..."
-          value={(nameColumn?.getFilterValue() as string) ?? ""}
-          onChange={(e) => nameColumn?.setFilterValue(e.target.value)}
+          value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
+          onChange={(e) =>
+            table.getColumn("name")?.setFilterValue(e.target.value)
+          }
           className="max-w-sm"
         />
         <Button
@@ -263,7 +267,6 @@ export default function Page() {
               .map((column) => (
                 <DropdownMenuCheckboxItem
                   key={column.id}
-                  className="capitalize"
                   checked={column.getIsVisible()}
                   onCheckedChange={() =>
                     column.toggleVisibility(!column.getIsVisible())
@@ -328,18 +331,27 @@ export default function Page() {
 
       {/* Pagination */}
       <div className="flex justify-end mt-4 gap-2">
-        <Button variant="outline" size="sm" disabled={currentPage <= 1} onClick={() => setCurrentPage((p) => p - 1)}>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={currentPage <= 1}
+          onClick={() => setCurrentPage((p) => p - 1)}
+        >
           Previous
         </Button>
-        <Button variant="outline" size="sm" disabled={currentPage >= totalPages} onClick={() => setCurrentPage((p) => p + 1)}>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={currentPage >= totalPages}
+          onClick={() => setCurrentPage((p) => p + 1)}
+        >
           Next
         </Button>
         <span className="self-center ml-2">
-          [Trang {currentPage} / {totalPages}]  -  [{totalElement} Linh Kiện / Trang]
+          [Trang {currentPage} / {totalPages}] - [{totalElement} Linh Kiện /
+          Trang]
         </span>
       </div>
-
-
 
       <h1 className="text-xl">Count: {count}</h1>
       <h1 className="text-xl">UserName: {user?.username}</h1>

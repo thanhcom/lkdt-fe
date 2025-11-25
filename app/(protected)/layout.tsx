@@ -9,6 +9,7 @@ import { useDispatch, useSelector } from "react-redux";
 export default function Layout({ children }: { children: React.ReactNode }) {
    const dispatch = useDispatch();
   const reduxUser = useSelector((state: RootState) => state.user.user);
+  
 
   useEffect(() => {
     if (!reduxUser) {
