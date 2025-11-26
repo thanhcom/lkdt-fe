@@ -158,10 +158,23 @@ export default function Page() {
                     Schematic
                   </button>
                 </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <button
+                    className="w-full text-left"
+                    onClick={() => {
+                      // Dispatch action lưu component vào Redux
+                      dispatch(setComponent(item));
+                      // Chỉ chuyển hướng tới trang schematic, không cần query param
+                      router.push(`/transaction/create`);
+                    }}
+                  >Transaction</button>
+                  
+                </DropdownMenuItem>
+                <div className="my-1 border-t border-gray-200" />
                 <DropdownMenuItem
                   onClick={() => navigator.clipboard.writeText(String(item.id))}
                 >
-                  Copy ID
+                  Detail
                 </DropdownMenuItem>
                 <DropdownMenuItem>
                   <button
