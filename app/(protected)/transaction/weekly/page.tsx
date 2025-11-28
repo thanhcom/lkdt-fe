@@ -306,7 +306,20 @@ export default function TransactionPage() {
 
   useEffect(() => {
     const loadInitial = async () => {
-      await fetchPage(1);
+      const today = new Date();
+      const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, ...
+
+      // Nếu muốn tuần bắt đầu từ thứ 2
+      const startOfWeek = new Date(today);
+      startOfWeek.setDate(today.getDate() - ((dayOfWeek + 6) % 7));
+
+      const startISO = startOfWeek.toISOString();
+      const endISO = today.toISOString();
+
+      setStartDate(startISO.slice(0, 16)); // datetime-local format
+      setEndDate(endISO.slice(0, 16));
+
+      await fetchPageWithTime(startISO, endISO);
     };
 
     loadInitial();

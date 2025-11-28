@@ -223,7 +223,7 @@ const TransactionTable = ({
   );
 };
 
-export default function TransactionPage() {
+export default function TransactionTodayPage() {
   const router = useRouter();
   const [data, setData] = useState<Transaction[]>([]);
   const [pageInfo, setPageInfo] = useState<any>({
@@ -235,24 +235,52 @@ export default function TransactionPage() {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [jumpPage, setJumpPage] = useState<number>(1);
 
-  const [searchField, setSearchField] = useState<
-    "componentName" | "type" | "projectName" | "time"
-  >("componentName");
+  const [searchField, setSearchField] = useState<"componentName" | "type">(
+    "componentName"
+  );
   const [searchValue, setSearchValue] = useState<string>("");
 
-  // Start/End time picker
-  const [startDate, setStartDate] = useState<string>("");
-  const [endDate, setEndDate] = useState<string>("");
+  // ======================
+  // Ngày hôm nay
+  // ======================
+  const getTodayRange = () => {
+    const now = new Date();
+    const start = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      0,
+      0,
+      0
+    ).toISOString();
+    const end = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      23,
+      59,
+      59
+    ).toISOString();
+    return { start, end };
+  };
 
   const fetchPage = async (
     page: number,
     keyword: string = "",
-    field: "componentName" | "type" | "projectName" = "componentName",
+    field: "componentName" | "type" = "componentName",
     sortingState: SortingState = []
   ) => {
+    const { start, end } = getTodayRange();
     try {
+      const sortQuery =
+        sortingState.length > 0
+          ? `&sortField=${sortingState[0].id}&sortOrder=${
+              sortingState[0].desc ? "desc" : "asc"
+            }`
+          : "";
+
       const res = await fetch(
-        `https://api-lkdt.thanhcom.site/transaction/search?${field}=${keyword}&sort=id`,
+        `https://api-lkdt.thanhcom.site/transaction/search?start=${start}&end=${end}`,
         {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         }
@@ -273,49 +301,14 @@ export default function TransactionPage() {
     }
   };
 
-  const fetchPageWithTime = async (start: string, end: string) => {
-    if (!start || !end) return;
-    try {
-      // convert datetime-local => ISO string đầy đủ
-      const startISO = new Date(start).toISOString();
-      const endISO = new Date(end).toISOString();
-
-      const res = await fetch(
-        `https://api-lkdt.thanhcom.site/transaction/search?start=${encodeURIComponent(
-          startISO
-        )}&end=${encodeURIComponent(endISO)}`,
-        {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        }
-      );
-
-      if (!res.ok) {
-        const errJson = await res.json();
-        console.error("Error:", errJson);
-        alert(`Server trả lỗi: ${errJson.error}`);
-        return;
-      }
-
-      const json = await res.json();
-      setData(json.data || []);
-      setPageInfo(json.pageInfo || pageInfo);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
   useEffect(() => {
-    const loadInitial = async () => {
-      await fetchPage(1);
-    };
-
-    loadInitial();
+    fetchPage(1);
   }, []);
 
   return (
     <div className="p-6 space-y-4">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Quản lý giao dịch</h1>
+        <h1 className="text-2xl font-bold">Giao dịch hôm nay</h1>
         <button
           className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
           onClick={() => router.push("/transaction/create")}
@@ -326,67 +319,32 @@ export default function TransactionPage() {
 
       <Card className="shadow-lg">
         <CardContent>
-          {/* Search componentName/type/projectName */}
           <div className="mb-4 flex items-center gap-2">
             <select
               className="border px-2 py-1 rounded"
               value={searchField}
               onChange={(e) =>
-                setSearchField(
-                  e.target.value as
-                    | "componentName"
-                    | "type"
-                    | "projectName"
-                    | "time"
-                )
+                setSearchField(e.target.value as "componentName" | "type")
               }
             >
               <option value="componentName">Tên linh kiện</option>
               <option value="type">Loại Giao Dịch</option>
-              <option value="projectName">Tên Project</option>
-              <option value="time">Theo thời gian</option>
             </select>
 
-            {searchField !== "time" ? (
-              <>
-                <input
-                  type="text"
-                  placeholder="Nhập từ khóa..."
-                  value={searchValue}
-                  onChange={(e) => setSearchValue(e.target.value)}
-                  className="border px-2 py-1 rounded flex-1"
-                />
-                <button
-                  className="px-3 py-1 bg-blue-500 text-white rounded"
-                  onClick={() =>
-                    fetchPage(1, searchValue, searchField, sorting)
-                  }
-                >
-                  Tìm kiếm
-                </button>
-              </>
-            ) : (
-              <>
-                <input
-                  type="datetime-local"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="border px-2 py-1 rounded"
-                />
-                <input
-                  type="datetime-local"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="border px-2 py-1 rounded"
-                />
-                <button
-                  className="px-3 py-1 bg-blue-500 text-white rounded"
-                  onClick={() => fetchPageWithTime(startDate, endDate)}
-                >
-                  Tìm theo thời gian
-                </button>
-              </>
-            )}
+            <input
+              type="text"
+              placeholder="Nhập từ khóa..."
+              value={searchValue}
+              onChange={(e) => setSearchValue(e.target.value)}
+              className="border px-2 py-1 rounded flex-1"
+            />
+
+            <button
+              className="px-3 py-1 bg-blue-500 text-white rounded"
+              onClick={() => fetchPage(1, searchValue, searchField, sorting)}
+            >
+              Tìm kiếm
+            </button>
           </div>
 
           <TransactionTable
@@ -399,18 +357,14 @@ export default function TransactionPage() {
             <button
               className="px-3 py-1 border rounded disabled:opacity-50"
               disabled={!pageInfo.hasPrevious}
-              onClick={() => {
-                if (searchField !== "time") {
-                  fetchPage(
-                    pageInfo.currentPage - 1,
-                    searchValue,
-                    searchField,
-                    sorting
-                  );
-                } else {
-                  fetchPageWithTime(startDate, endDate);
-                }
-              }}
+              onClick={() =>
+                fetchPage(
+                  pageInfo.currentPage - 1,
+                  searchValue,
+                  searchField,
+                  sorting
+                )
+              }
             >
               Previous
             </button>
@@ -426,13 +380,9 @@ export default function TransactionPage() {
             />
             <button
               className="px-3 py-1 border rounded"
-              onClick={() => {
-                if (searchField !== "time") {
-                  fetchPage(jumpPage, searchValue, searchField, sorting);
-                } else {
-                  fetchPageWithTime(startDate, endDate);
-                }
-              }}
+              onClick={() =>
+                fetchPage(jumpPage, searchValue, searchField, sorting)
+              }
             >
               Go
             </button>
@@ -442,18 +392,14 @@ export default function TransactionPage() {
             <button
               className="px-3 py-1 border rounded disabled:opacity-50"
               disabled={!pageInfo.hasNext}
-              onClick={() => {
-                if (searchField !== "time") {
-                  fetchPage(
-                    pageInfo.currentPage + 1,
-                    searchValue,
-                    searchField,
-                    sorting
-                  );
-                } else {
-                  fetchPageWithTime(startDate, endDate);
-                }
-              }}
+              onClick={() =>
+                fetchPage(
+                  pageInfo.currentPage + 1,
+                  searchValue,
+                  searchField,
+                  sorting
+                )
+              }
             >
               Next
             </button>

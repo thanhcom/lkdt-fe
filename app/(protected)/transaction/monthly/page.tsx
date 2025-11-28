@@ -306,7 +306,18 @@ export default function TransactionPage() {
 
   useEffect(() => {
     const loadInitial = async () => {
-      await fetchPage(1);
+      const today = new Date();
+      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+
+      const startISO = startOfMonth.toISOString();
+      const endISO = today.toISOString();
+
+      // Điền sẵn vào input datetime-local
+      setStartDate(startISO.slice(0, 16));
+      setEndDate(endISO.slice(0, 16));
+
+      // Load dữ liệu tháng này
+      await fetchPageWithTime(startISO, endISO);
     };
 
     loadInitial();
