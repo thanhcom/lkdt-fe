@@ -72,7 +72,7 @@ export function getMenuList(pathname: string): Group[] {
           icon: ShoppingCart
         },
         {
-          href: "/retail",
+          href: "/retail/all",
           label: "Retail",
           icon: Tag
         }

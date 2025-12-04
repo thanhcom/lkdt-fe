@@ -45,10 +45,12 @@ export type Order = {
 // ====================== TABLE =====================
 const OrdersTable = ({
   data,
+  setData,
   sorting,
   setSorting,
 }: {
   data: Order[];
+  setData: React.Dispatch<React.SetStateAction<Order[]>>;
   sorting: SortingState;
   setSorting: (
     updater: SortingState | ((old: SortingState) => SortingState)
@@ -136,7 +138,7 @@ const OrdersTable = ({
         <div className="flex gap-2">
           <button
             className="px-2 py-1 bg-blue-600 text-white rounded"
-            onClick={() => router.push(`/orders/edit/${row.original.id}`)}
+            onClick={() => router.push(`/retail/edit/${row.original.id}`)}
           >
             Edit
           </button>
@@ -157,8 +159,13 @@ const OrdersTable = ({
                   }
                 );
                 const json = await res.json();
-                if (res.ok) alert("Xoá thành công!");
-                else alert("Lỗi: " + json.error);
+                if (res.ok) {
+                  alert("Xoá thành công!");
+                  // --- UPDATE UI NGAY ---
+                  setData((prev) => prev.filter((o) => o.id !== id));
+                } else {
+                  alert("Lỗi: " + json.error);
+                }
               } catch (err) {
                 console.error(err);
                 alert("Có lỗi khi xoá đơn hàng!");
@@ -336,7 +343,7 @@ export default function OrdersPage() {
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Quản lý đơn hàng</h1>
         <button
-          onClick={() => router.push("/orders/create")}
+          onClick={() => router.push("/retail/add")}
           className="px-4 py-2 bg-green-600 text-white rounded"
         >
           Thêm đơn hàng
@@ -411,7 +418,12 @@ export default function OrdersPage() {
           </div>
 
           {/* ================= TABLE ================= */}
-          <OrdersTable data={data} sorting={sorting} setSorting={setSorting} />
+          <OrdersTable
+            data={data}
+            setData={setData} // <--- truyền setData để update UI
+            sorting={sorting}
+            setSorting={setSorting}
+          />
 
           {/* ================= PAGINATION ================= */}
           <div className="flex items-center gap-2 mt-4">
