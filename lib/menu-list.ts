@@ -5,7 +5,8 @@ import {
   SquarePen,
   LayoutGrid,
   LucideIcon,
-  ShoppingCart
+  ShoppingCart,
+  Handshake
 } from "lucide-react";
 
 type Submenu = {
@@ -67,15 +68,26 @@ export function getMenuList(pathname: string): Group[] {
           ]
         },
         {
-          href: "/supplier",
-          label: "Suppliers",
-          icon: ShoppingCart
-        },
-        {
           href: "/retail/all",
           label: "Retail",
           icon: Tag
-        }
+        },
+        {
+          href: "/customer/all",
+          label: "Customer",
+          icon: Handshake
+        },
+        {
+          href: "/supplier/all",
+          label: "Suppliers",
+          icon: ShoppingCart
+        },
+        ,
+        {
+          href: "/audit",
+          label: "Audit Log",
+          icon: ShoppingCart
+        },
       ]
     },
     {
