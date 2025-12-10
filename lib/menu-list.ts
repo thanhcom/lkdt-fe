@@ -6,7 +6,8 @@ import {
   LayoutGrid,
   LucideIcon,
   ShoppingCart,
-  Handshake
+  Handshake,
+  Logs
 } from "lucide-react";
 
 type Submenu = {
@@ -86,7 +87,7 @@ export function getMenuList(pathname: string): Group[] {
         {
           href: "/audit",
           label: "Audit Log",
-          icon: ShoppingCart
+          icon: Logs
         },
       ]
     },

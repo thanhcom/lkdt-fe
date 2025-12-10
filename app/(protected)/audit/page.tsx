@@ -174,7 +174,7 @@ export default function OrderHistoryPage() {
                   <th className="p-2 border">Action</th>
                   <th className="p-2 border">Mô tả</th>
                   <th className="p-2 border">Ngày</th>
-                  <th className="p-2 border">User Update</th>
+                  <th className="p-2 border">User Commit</th>
                 </tr>
               </thead>
               <tbody>
