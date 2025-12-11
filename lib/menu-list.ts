@@ -83,12 +83,21 @@ export function getMenuList(pathname: string): Group[] {
           label: "Suppliers",
           icon: ShoppingCart
         },
-        ,
         {
-          href: "/audit",
+          href: "",
           label: "Audit Log",
-          icon: Logs
-        },
+          icon: Logs,
+          submenus: [            
+            {
+              href: "/audit/orderlog",
+              label: "Order Log"
+            },
+            {
+              href: "/audit/importlog",
+              label: "Import Log"
+            }
+          ]
+        }
       ]
     },
     {

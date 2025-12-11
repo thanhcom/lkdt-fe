@@ -267,6 +267,13 @@ export default function Page() {
         >
           Thêm Linh Kiện
         </Button>
+        <Button
+          variant="outline"
+          className="ml-2"
+          onClick={() => router.push("/import")}
+        >
+          Phiếu Nhập Hàng
+        </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="ml-auto">

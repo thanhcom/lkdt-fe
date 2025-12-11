@@ -47,7 +47,7 @@ export default function CreateOrderPage() {
   const recalcTotal = (items: Item[]) =>
     items.reduce((sum, item) => sum + (item.total || 0), 0);
 
-  // Tìm khách hàng
+  // Search customer
   useEffect(() => {
     const TOKEN = localStorage.getItem("token");
     if (!customerSearchTerm) return;
@@ -72,7 +72,7 @@ export default function CreateOrderPage() {
     return () => clearTimeout(timer);
   }, [customerSearchTerm]);
 
-  // Tìm sản phẩm
+  // Search components
   useEffect(() => {
     const TOKEN = localStorage.getItem("token");
     if (!searchTerm || activeItemIndex === null) return;
@@ -192,7 +192,7 @@ export default function CreateOrderPage() {
             Tổng: {recalcTotal(items).toLocaleString("vi-VN")}đ
           </span>
 
-          {/* Khách hàng */}
+          {/* Customer */}
           <section className="space-y-2 border-b pb-4">
             <h3 className="font-semibold text-lg text-gray-700">Khách hàng</h3>
             <div className="relative">
@@ -205,6 +205,16 @@ export default function CreateOrderPage() {
                   setCustomer(null);
                 }}
               />
+
+              {/* 🔥 NÚT TẠO KHÁCH HÀNG MỚI */}
+              <Button
+                className="mt-2 w-full"
+                variant="outline"
+                onClick={() => router.push("/customer/create")}
+              >
+                + Tạo khách hàng mới
+              </Button>
+
               {customerActive && customerResults.length > 0 && (
                 <ul className="absolute z-10 w-full bg-white border rounded max-h-40 overflow-auto mt-1">
                   {customerResults.map((c) => (
@@ -242,7 +252,7 @@ export default function CreateOrderPage() {
             )}
           </section>
 
-          {/* Trạng thái */}
+          {/* Status */}
           <section className="space-y-2 border-b pb-4">
             <h3 className="font-semibold text-lg text-gray-700">Trạng thái đơn hàng</h3>
             <select
@@ -256,7 +266,7 @@ export default function CreateOrderPage() {
             </select>
           </section>
 
-          {/* Sản phẩm */}
+          {/* Components */}
           <section className="space-y-4 relative">
             <h3 className="font-semibold text-lg text-gray-700">Sản phẩm</h3>
             <div className="space-y-3">
@@ -347,7 +357,7 @@ export default function CreateOrderPage() {
             </Button>
           </section>
 
-          {/* Hành động */}
+          {/* Submit */}
           <section className="flex justify-end gap-3 mt-4">
             <Button onClick={handleCreateOrder} disabled={saving}>
               {saving ? "Đang tạo..." : "Tạo đơn hàng"}
