@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,17 +9,23 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import Link from "next/link";
 import { login, LoginPayload, LoginResponse } from "@/app/services/auth/login";
-import { useDispatch } from "react-redux";
 
 export default function LoginPage() {
   const router = useRouter();
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [remember, setRemember] = useState(false); // chỉ dùng FE
+  const [remember, setRemember] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // 🔥 Kiểm tra nếu đã có token → redirect
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      router.replace("/component");
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,12 +41,11 @@ export default function LoginPage() {
     try {
       const payload: LoginPayload = { username, password, remember };
       const data: LoginResponse = await login(payload);
-      console.log("Login success:", data);
 
-      // Lưu token vào localStorage
       localStorage.setItem("token", data.token);
       localStorage.setItem("refreshToken", data.refresh_token);
-      router.push("/home");
+
+      router.push("/component");
     } catch (err: any) {
       setError(err.message || "Đăng nhập thất bại");
     } finally {
@@ -86,8 +91,9 @@ export default function LoginPage() {
                 checked={remember}
                 onCheckedChange={(checked) => setRemember(!!checked)}
               />
-              <Label htmlFor="remember">Ghi nhớ đăng nhập</Label>
+              <Label htmlFor="remember">Ghi nhớ</Label>
             </div>
+
             <Link
               href="/forgot-password"
               className="text-sm text-blue-600 hover:underline"
@@ -100,29 +106,6 @@ export default function LoginPage() {
             {loading ? "Đang đăng nhập..." : "Đăng nhập"}
           </Button>
         </form>
-
-        <div className="flex items-center my-4">
-          <hr className="flex-1 border-gray-300" />
-          <span className="mx-2 text-gray-400 text-sm">Hoặc</span>
-          <hr className="flex-1 border-gray-300" />
-        </div>
-
-        <div className="flex flex-col gap-2">
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={() => console.log("Login with Google")}
-          >
-            Đăng nhập với Google
-          </Button>
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={() => console.log("Login with Facebook")}
-          >
-            Đăng nhập với Facebook
-          </Button>
-        </div>
       </Card>
     </div>
   );

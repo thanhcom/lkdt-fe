@@ -13,6 +13,7 @@ import "swiper/css/navigation";
 import "swiper/css/pagination";
 import { Navigation, Pagination, Autoplay } from "swiper/modules";
 import Image from "next/image";
+import Link from "next/link";
 
 export default function HomePage() {
   const slides: string[] = [
@@ -147,9 +148,11 @@ export default function HomePage() {
             Chúng tôi luôn sẵn sàng tư vấn và triển khai các giải pháp điện tử
             và IoT tốt nhất cho bạn.
           </p>
-          <Button size="lg" onClick={() => alert("Chức năng liên hệ demo")}>
-            Liên hệ ngay
-          </Button>
+          <Link href="/component">
+            <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white">
+              Vào trang quản trị   
+            </Button>
+          </Link>
         </section>
       </div>
     </main>

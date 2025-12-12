@@ -63,18 +63,15 @@ export default function Page() {
   const [totalElement, setTotalElement] = React.useState(0);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
-  const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    []
-  );
-  const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({});
-  const [rowSelection, setRowSelection] = React.useState({});
 
-  const count = useSelector((state: RootState) => state.counter.value);
-  const user = useSelector((state: RootState) => state.user.user);
+  // FILTER
+  const [filters, setFilters] = React.useState({
+    keyword: "",
+    id: "",
+    stockQuantity: "",
+  });
 
-  // Columns được khai báo bên trong component để dùng dispatch và router
+  // Columns
   const columns: ColumnDef<ComponentItem>[] = React.useMemo(
     () => [
       {
@@ -83,23 +80,18 @@ export default function Page() {
           <Checkbox
             checked={table.getIsAllPageRowsSelected()}
             ref={(el) => {
-              if (el)
-                el && (el.indeterminate = table.getIsSomePageRowsSelected());
+              if (el) el.indeterminate = table.getIsSomePageRowsSelected();
             }}
-            onCheckedChange={(value) =>
-              table.toggleAllPageRowsSelected(!!value)
-            }
-            aria-label="Select all"
+            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
           />
         ),
         cell: ({ row }) => (
           <Checkbox
             checked={row.getIsSelected()}
             ref={(el) => {
-              if (el) el && (el.indeterminate = row.getIsSomeSelected());
+              if (el) el.indeterminate = row.getIsSomeSelected();
             }}
             onCheckedChange={(value) => row.toggleSelected(!!value)}
-            aria-label="Select row"
           />
         ),
         enableSorting: false,
@@ -110,7 +102,9 @@ export default function Page() {
         header: ({ column }) => (
           <Button
             variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            onClick={() =>
+              column.toggleSorting(column.getIsSorted() === "asc")
+            }
           >
             Name <ArrowUpDown />
           </Button>
@@ -129,7 +123,8 @@ export default function Page() {
       {
         accessorKey: "createdAt",
         header: "Created At",
-        cell: ({ row }) => new Date(row.getValue("createdAt")).toLocaleString(),
+        cell: ({ row }) =>
+          new Date(row.getValue("createdAt")).toLocaleString(),
       },
       {
         id: "actions",
@@ -140,7 +135,6 @@ export default function Page() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="h-8 w-8 p-0">
-                  <span className="sr-only">Open menu</span>
                   <MoreHorizontal />
                 </Button>
               </DropdownMenuTrigger>
@@ -149,45 +143,51 @@ export default function Page() {
                   <button
                     className="w-full text-left"
                     onClick={() => {
-                      // Dispatch action lưu component vào Redux
                       dispatch(setComponent(item));
-                      // Chỉ chuyển hướng tới trang schematic, không cần query param
                       router.push(`/schemantic/${item.id}`);
                     }}
                   >
                     Schematic
                   </button>
                 </DropdownMenuItem>
+
                 <DropdownMenuItem>
                   <button
                     className="w-full text-left"
                     onClick={() => {
-                      // Dispatch action lưu component vào Redux
                       dispatch(setComponent(item));
-                      // Chỉ chuyển hướng tới trang schematic, không cần query param
                       router.push(`/transaction/create`);
                     }}
-                  >Transaction</button>
-                  
+                  >
+                    Transaction
+                  </button>
                 </DropdownMenuItem>
+
                 <div className="my-1 border-t border-gray-200" />
+
                 <DropdownMenuItem
                   onClick={() => navigator.clipboard.writeText(String(item.id))}
                 >
                   Detail
                 </DropdownMenuItem>
+
                 <DropdownMenuItem>
                   <button
                     className="w-full text-left"
-                    onClick={() => router.push(`/component/${item.id}/edit`)}
+                    onClick={() =>
+                      router.push(`/component/${item.id}/edit`)
+                    }
                   >
                     Edit
                   </button>
                 </DropdownMenuItem>
+
                 <DropdownMenuItem>
                   <button
                     className="w-full text-left"
-                    onClick={() => router.push(`/component/${item.id}/delete`)}
+                    onClick={() =>
+                      router.push(`/component/${item.id}/delete`)
+                    }
                   >
                     Delete
                   </button>
@@ -201,7 +201,12 @@ export default function Page() {
     [dispatch, router]
   );
 
-  // React Table
+  // React Table state
+  const [sorting, setSorting] = React.useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
+  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
+  const [rowSelection, setRowSelection] = React.useState({});
+
   const table = useReactTable({
     data,
     columns,
@@ -216,90 +221,149 @@ export default function Page() {
     state: { sorting, columnFilters, columnVisibility, rowSelection },
   });
 
-  // Fetch dữ liệu
-  React.useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) throw new Error("No token found");
+  // ==========================
+  // FETCH DATA (SERVER SIDE)
+  // ==========================
+  const fetchData = async () => {
+    setLoading(true);
+    setError(null);
 
-        const res = await fetch(
-          "https://api-lkdt.thanhcom.site/components/search",
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const json = await res.json();
-        setData(json.data || []);
-        setTotalPages(json.pageInfo?.totalPage || 1);
-        setTotalElement(json.pageInfo?.totalElement || 0);
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) throw new Error("No token found");
+
+      const params = new URLSearchParams({
+        page: String(currentPage - 1),
+        size: "20",
+      });
+
+      if (filters.keyword) params.append("keyword", filters.keyword);
+      if (filters.id) params.append("id", filters.id);
+      if (filters.stockQuantity)
+        params.append("stockQuantity", filters.stockQuantity);
+
+      const url = `https://api-lkdt.thanhcom.site/components/search?${params.toString()}`;
+
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+
+      setData(json.data || []);
+      setTotalPages(json.pageInfo?.totalPage || 1);
+      setTotalElement(json.pageInfo?.totalElement || 0);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch when page changes
+  React.useEffect(() => {
     fetchData();
-  }, []);
+  }, [currentPage]);
 
   if (loading) return <Loading />;
   if (error) return <div className="p-8 text-red-500">Error: {error}</div>;
 
   return (
     <div className="p-8">
-      {/* Filter & Column visibility */}
-      <div className="flex items-center py-4">
-        <Input
-          placeholder="Filter name..."
-          value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
-          onChange={(e) =>
-            table.getColumn("name")?.setFilterValue(e.target.value)
-          }
-          className="max-w-sm"
-        />
+
+      {/* FILTER UI */}
+      <div className="flex gap-4 py-4 items-end flex-wrap">
+
+        <div className="flex flex-col">
+          <label className="mb-1 text-sm font-medium">Keyword</label>
+          <Input
+            placeholder="Tên, loại, hãng..."
+            value={filters.keyword}
+            onChange={(e) => setFilters({ ...filters, keyword: e.target.value })}
+            className="w-64"
+          />
+        </div>
+
+        <div className="flex flex-col">
+          <label className="mb-1 text-sm font-medium">ID</label>
+          <Input
+            placeholder="ID linh kiện"
+            value={filters.id}
+            onChange={(e) => setFilters({ ...filters, id: e.target.value })}
+            className="w-32"
+          />
+        </div>
+
+        <div className="flex flex-col">
+          <label className="mb-1 text-sm font-medium">Stock ≥</label>
+          <Input
+            placeholder="Số lượng"
+            value={filters.stockQuantity}
+            onChange={(e) =>
+              setFilters({ ...filters, stockQuantity: e.target.value })
+            }
+            className="w-32"
+          />
+        </div>
+
+        <Button
+          className="h-10"
+          onClick={() => {
+            setCurrentPage(1);
+            fetchData();
+          }}
+        >
+          🔍 Tìm Kiếm
+        </Button>
+
         <Button
           variant="outline"
-          className="ml-2"
-          onClick={() => router.push("/component/create")}
+          className="h-10"
+          onClick={() => {
+            setFilters({ keyword: "", id: "", stockQuantity: "" });
+            setCurrentPage(1);
+            fetchData();
+          }}
         >
+         Xóa Bộ Lọc
+        </Button>
+
+        <Button variant="outline" onClick={() => router.push("/component/create")}>
           Thêm Linh Kiện
         </Button>
-        <Button
-          variant="outline"
-          className="ml-2"
-          onClick={() => router.push("/import")}
-        >
+
+        <Button variant="outline" onClick={() => router.push("/import")}>
           Phiếu Nhập Hàng
         </Button>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="ml-auto">
-              Columns <ChevronDown />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {table
-              .getAllColumns()
-              .filter((column) => column.getCanHide())
-              .map((column) => (
-                <DropdownMenuCheckboxItem
-                  key={column.id}
-                  checked={column.getIsVisible()}
-                  onCheckedChange={() =>
-                    column.toggleVisibility(!column.getIsVisible())
-                  }
-                >
-                  {column.id}
-                </DropdownMenuCheckboxItem>
-              ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
       </div>
 
-      {/* Table */}
+      {/* Column Toggle */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" className="ml-auto mb-4">
+            Columns <ChevronDown />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          {table
+            .getAllColumns()
+            .filter((column) => column.getCanHide())
+            .map((column) => (
+              <DropdownMenuCheckboxItem
+                key={column.id}
+                checked={column.getIsVisible()}
+                onCheckedChange={() =>
+                  column.toggleVisibility(!column.getIsVisible())
+                }
+              >
+                {column.id}
+              </DropdownMenuCheckboxItem>
+            ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {/* TABLE */}
       <div className="overflow-hidden rounded-md border">
         <Table>
           <TableHeader>
@@ -321,26 +385,17 @@ export default function Page() {
           <TableBody>
             {table.getRowModel().rows.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                >
+                <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
-                >
+                <TableCell colSpan={columns.length} className="h-24 text-center">
                   No results.
                 </TableCell>
               </TableRow>
@@ -359,6 +414,7 @@ export default function Page() {
         >
           Previous
         </Button>
+
         <Button
           variant="outline"
           size="sm"
@@ -367,14 +423,11 @@ export default function Page() {
         >
           Next
         </Button>
+
         <span className="self-center ml-2">
-          [Trang {currentPage} / {totalPages}] - [{totalElement} Linh Kiện /
-          Trang]
+          [Trang {currentPage} / {totalPages}] - [{totalElement} Linh Kiện]
         </span>
       </div>
-
-      <h1 className="text-xl">Count: {count}</h1>
-      <h1 className="text-xl">UserName: {user?.username}</h1>
     </div>
   );
 }

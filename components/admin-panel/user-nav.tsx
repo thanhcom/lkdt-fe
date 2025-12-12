@@ -9,7 +9,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-  TooltipProvider
+  TooltipProvider,
 } from "@/components/ui/tooltip";
 import {
   DropdownMenu,
@@ -18,7 +18,7 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
 export function UserNav() {
@@ -68,9 +68,17 @@ export function UserNav() {
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="hover:cursor-pointer" onClick={() => {}}>
+        <DropdownMenuItem
+          className="hover:cursor-pointer"
+          onClick={() => {
+            localStorage.removeItem("token");
+            localStorage.removeItem("refreshToken");
+
+            window.location.href = "/"; // reload full page → clear toàn bộ state
+          }}
+        >
           <LogOut className="w-4 h-4 mr-3 text-muted-foreground" />
-          Đăng xuất
+          Đăng xuất.
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

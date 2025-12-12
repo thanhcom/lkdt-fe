@@ -22,6 +22,7 @@ type Menu = {
   active?: boolean;
   icon: LucideIcon;
   submenus?: Submenu[];
+  requireAdmin?: boolean;
 };
 
 type Group = {
@@ -38,8 +39,7 @@ export function getMenuList(pathname: string): Group[] {
           href: "/component",
           label: "Component",
           icon: LayoutGrid,
-          submenus: [
-          ]
+          submenus: []
         }
       ]
     },
@@ -50,22 +50,11 @@ export function getMenuList(pathname: string): Group[] {
           href: "",
           label: "Transaction",
           icon: SquarePen,
-          submenus: [            
-            {
-              href: "/transaction/today",
-              label: "Today Transaction"
-            },
-            {
-              href: "/transaction/weekly",
-              label: "Weekly Transaction"
-            },{
-              href: "/transaction/monthly",
-              label: "Monthly Transaction"
-            },
-            {
-              href: "/transaction/all",
-              label: "All Transaction"
-            }
+          submenus: [
+            { href: "/transaction/today", label: "Today Transaction" },
+            { href: "/transaction/weekly", label: "Weekly Transaction" },
+            { href: "/transaction/monthly", label: "Monthly Transaction" },
+            { href: "/transaction/all", label: "All Transaction" },
           ]
         },
         {
@@ -87,15 +76,9 @@ export function getMenuList(pathname: string): Group[] {
           href: "",
           label: "Audit Log",
           icon: Logs,
-          submenus: [            
-            {
-              href: "/audit/orderlog",
-              label: "Order Log"
-            },
-            {
-              href: "/audit/importlog",
-              label: "Import Log"
-            }
+          submenus: [
+            { href: "/audit/orderlog", label: "Order Log" },
+            { href: "/audit/importlog", label: "Import Log" },
           ]
         }
       ]
@@ -104,14 +87,15 @@ export function getMenuList(pathname: string): Group[] {
       groupLabel: "Settings",
       menus: [
         {
-          href: "/users",
+          href: "/user-info",
           label: "Users Info",
           icon: Users
         },
         {
           href: "/account",
-          label: "Account Settings",
-          icon: Settings
+          label: "Account Manager",
+          icon: Settings,
+          requireAdmin: true,
         }
       ]
     }
