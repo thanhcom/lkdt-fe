@@ -2,159 +2,231 @@
 
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
-import { Table, TableHeader, TableRow, TableCell, TableBody } from "@/components/ui/table";
+import {
+  Table,
+  TableHeader,
+  TableRow,
+  TableCell,
+  TableBody,
+} from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
 
+/* ================= TYPES ================= */
 
+interface Role {
+  id: number;
+  name: string;
+}
+
+interface Account {
+  id: number;
+  username: string;
+  fullname: string;
+  email: string;
+  phone: string;
+  active: boolean;
+  roles: Role[];
+}
+
+interface PageResponse<T> {
+  content: T[];
+  totalPages: number;
+  number: number;
+}
+
+/* ================= CONSTANT ================= */
+
+const ROLE_OPTIONS = ["ADMIN", "CUSTOMER"];
+
+/* ================= COMPONENT ================= */
 
 export default function AccountPage() {
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [page, setPage] = useState(0);
-  const [pageSize] = useState(10);
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("token") : "";
 
-  // dialog state
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const [keyword, setKeyword] = useState("");
+  const [debouncedKeyword, setDebouncedKeyword] = useState("");
+
+  const [page, setPage] = useState(0);
+  const pageSize = 10;
+  const [totalPages, setTotalPages] = useState(0);
+
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Account | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<Account | null>(null);
 
-  // form state
+  /* ======= FORM (MATCH UserRequest) ======= */
   const [form, setForm] = useState({
     username: "",
+    password: "",
     fullname: "",
     email: "",
     phone: "",
-    role: "CUSTOMER",
+    active: true,
+    roleNames: [] as string[],
   });
 
-  const token = typeof window !== "undefined" ? localStorage.getItem("token") : "";
+  /* ================= DEBOUNCE SEARCH ================= */
 
-  // Fetch API
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedKeyword(keyword), 500);
+    return () => clearTimeout(t);
+  }, [keyword]);
+
+  /* ================= LOAD DATA ================= */
+
   const loadData = () => {
     setLoading(true);
-    fetch("https://api-lkdt.thanhcom.site/account/all", {
-      headers: { Authorization: `Bearer ${token}` },
+
+    const params = new URLSearchParams({
+      page: page.toString(),
+      size: pageSize.toString(),
+    });
+
+    if (debouncedKeyword.trim()) {
+      params.append("keyword", debouncedKeyword);
+    }
+
+    fetch(`https://api-lkdt.thanhcom.site/account/search?${params}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     })
-      .then((res) => res.json())
+      .then((r) => r.json())
       .then((res) => {
-        setAccounts(res.data || []);
-        setLoading(false);
+        const data: PageResponse<Account> = res.data;
+        setAccounts(data.content);
+        setTotalPages(data.totalPages);
       })
-      .catch(() => setLoading(false));
+      .finally(() => setLoading(false));
   };
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [page, debouncedKeyword]);
 
-  const filtered = accounts.filter(
-    (x) =>
-      x.username.toLowerCase().includes(search.toLowerCase()) ||
-      x.email.toLowerCase().includes(search.toLowerCase()) ||
-      x.phone.includes(search)
-  );
+  /* ================= SAVE (UPDATE) ================= */
 
-  const paginated = filtered.slice(page * pageSize, page * pageSize + pageSize);
-
-  // reset form
-  const resetForm = () => {
-    setForm({
-      username: "",
-      fullname: "",
-      email: "",
-      phone: "",
-      role: "CUSTOMER",
-    });
-  };
-
-  // create/update
   const handleSave = () => {
-    const method = editing ? "PUT" : "POST";
-    const url = editing
-      ? `https://api-lkdt.thanhcom.site/account/update/${editing.username}`
-      : "https://api-lkdt.thanhcom.site/account/create";
+    if (!editing) return;
 
-    fetch(url, {
-      method,
+    const body: any = {
+      fullname: form.fullname || null,
+      email: form.email || null,
+      phone: form.phone || null,
+      active: form.active,
+      roleNames: form.roleNames,
+    };
+
+    if (form.password.trim()) {
+      body.password = form.password;
+    }
+
+    fetch(`https://api-lkdt.thanhcom.site/account/update/${editing.id}`, {
+      method: "PUT",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify(form),
-    })
-      .then(() => {
-        setOpen(false);
-        resetForm();
-        loadData();
-      })
-      .catch((err) => console.error(err));
+      body: JSON.stringify(body),
+    }).then(() => {
+      setOpen(false);
+      setEditing(null);
+      loadData();
+    });
   };
 
-  // delete
-  const handleDelete = (username: string) => {
-    if (!confirm("Xóa tài khoản này?")) return;
+  /* ================= DELETE ================= */
 
-    fetch(`https://api-lkdt.thanhcom.site/account/delete/${username}`, {
+  const handleDelete = () => {
+    if (!confirmDelete) return;
+
+    fetch(`https://api-lkdt.thanhcom.site/account/delete/${confirmDelete.id}`, {
       method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(() => loadData())
-      .catch((err) => console.error(err));
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }).then(() => {
+      setConfirmDelete(null);
+      loadData();
+    });
   };
+
+  /* ================= TOGGLE ACTIVE ================= */
+
+  const toggleActive = (acc: Account) => {
+    fetch(`https://api-lkdt.thanhcom.site/account/toggle-active/${acc.id}`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }).then(loadData);
+  };
+
+  /* ================= RENDER ================= */
 
   return (
     <Card className="p-6 mt-4">
-      <h1 className="text-2xl font-semibold mb-4">Quản lý tài khoản</h1>
-
-      {/* Search */}
       <div className="flex justify-between mb-4">
-        <Input
-          placeholder="Tìm kiếm username / email / phone..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-72"
-        />
-        <Button
-          onClick={() => {
-            resetForm();
-            setEditing(null);
-            setOpen(true);
-          }}
-        >
-          + Thêm tài khoản
-        </Button>
+        <h1 className="text-2xl font-semibold">Quản lý tài khoản</h1>
       </div>
 
-      {/* Table */}
+      {/* SEARCH */}
+      <Input
+        placeholder="Tìm theo username / email..."
+        value={keyword}
+        onChange={(e) => setKeyword(e.target.value)}
+        className="w-80 mb-4"
+      />
+
+      {/* TABLE */}
       <Table>
         <TableHeader>
           <TableRow>
-            <TableCell className="font-bold">Username</TableCell>
-            <TableCell className="font-bold">Fullname</TableCell>
-            <TableCell className="font-bold">Email</TableCell>
-            <TableCell className="font-bold">Phone</TableCell>
-            <TableCell className="font-bold">Roles</TableCell>
-            <TableCell className="font-bold">Active</TableCell>
-            <TableCell className="font-bold">Actions</TableCell>
+            <TableCell>Username</TableCell>
+            <TableCell>Fullname</TableCell>
+            <TableCell>Email</TableCell>
+            <TableCell>Roles</TableCell>
+            <TableCell>Active</TableCell>
+            <TableCell>Actions</TableCell>
           </TableRow>
         </TableHeader>
 
         <TableBody>
-          {paginated.map((acc) => (
-            <TableRow key={acc.username}>
+          {accounts.map((acc) => (
+            <TableRow key={acc.id}>
               <TableCell>{acc.username}</TableCell>
               <TableCell>{acc.fullname}</TableCell>
               <TableCell>{acc.email}</TableCell>
-              <TableCell>{acc.phone}</TableCell>
 
               <TableCell>
                 {acc.roles.map((r) => (
                   <span
                     key={r.id}
-                    className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded block w-fit mb-1"
+                    className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded mr-1"
                   >
                     {r.name}
                   </span>
@@ -162,14 +234,13 @@ export default function AccountPage() {
               </TableCell>
 
               <TableCell>
-                {acc.active ? (
-                  <span className="text-green-600">Active</span>
-                ) : (
-                  <span className="text-red-600">Inactive</span>
-                )}
+                <Switch
+                  checked={acc.active}
+                  onCheckedChange={() => toggleActive(acc)}
+                />
               </TableCell>
 
-              <TableCell className="flex gap-2">
+              <TableCell className="space-x-2">
                 <Button
                   size="sm"
                   variant="secondary"
@@ -177,10 +248,12 @@ export default function AccountPage() {
                     setEditing(acc);
                     setForm({
                       username: acc.username,
-                      fullname: acc.fullname,
-                      email: acc.email,
-                      phone: acc.phone,
-                      role: acc.roles[0]?.name || "CUSTOMER",
+                      password: "",
+                      fullname: acc.fullname ?? "",
+                      email: acc.email ?? "",
+                      phone: acc.phone ?? "",
+                      active: acc.active,
+                      roleNames: acc.roles.map((r) => r.name),
                     });
                     setOpen(true);
                   }}
@@ -191,9 +264,9 @@ export default function AccountPage() {
                 <Button
                   size="sm"
                   variant="destructive"
-                  onClick={() => handleDelete(acc.username)}
+                  onClick={() => setConfirmDelete(acc)}
                 >
-                  Xóa
+                  Xoá
                 </Button>
               </TableCell>
             </TableRow>
@@ -201,37 +274,37 @@ export default function AccountPage() {
         </TableBody>
       </Table>
 
-      {/* Pagination */}
-      <div className="flex justify-between items-center mt-4">
+      {/* PAGINATION */}
+      <div className="flex justify-between mt-4">
         <Button disabled={page === 0} onClick={() => setPage(page - 1)}>
-          ← Trang trước
+          ← Trước
         </Button>
-
-        <p>
-          Trang {page + 1} / {Math.ceil(filtered.length / pageSize)}
-        </p>
-
+        <span>
+          Trang {page + 1} / {totalPages}
+        </span>
         <Button
-          disabled={(page + 1) * pageSize >= filtered.length}
+          disabled={page + 1 >= totalPages}
           onClick={() => setPage(page + 1)}
         >
-          Trang sau →
+          Sau →
         </Button>
       </div>
 
-      {/* Add/Edit Dialog */}
+      {/* EDIT DIALOG */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editing ? "Sửa tài khoản" : "Thêm tài khoản"}</DialogTitle>
+            <DialogTitle>Sửa tài khoản</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-3">
+            <Input disabled value={form.username} />
+
             <Input
-              placeholder="Username"
-              value={form.username}
-              disabled={!!editing}
-              onChange={(e) => setForm({ ...form, username: e.target.value })}
+              type="password"
+              placeholder="Password (để trống nếu không đổi)"
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
             />
 
             <Input
@@ -252,25 +325,61 @@ export default function AccountPage() {
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
             />
 
-            <Select
-              value={form.role}
-              onValueChange={(v) => setForm({ ...form, role: v })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Chọn role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ADMIN">ADMIN</SelectItem>
-                <SelectItem value="CUSTOMER">CUSTOMER</SelectItem>
-              </SelectContent>
-            </Select>
+            {/* ACTIVE */}
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={form.active}
+                onCheckedChange={(v) => setForm({ ...form, active: v })}
+              />
+              <span>Active</span>
+            </div>
+
+            {/* ROLES */}
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Roles</p>
+              {ROLE_OPTIONS.map((role) => (
+                <div key={role} className="flex items-center gap-2">
+                  <Checkbox
+                    checked={form.roleNames.includes(role)}
+                    onCheckedChange={(checked) => {
+                      setForm({
+                        ...form,
+                        roleNames: checked
+                          ? [...form.roleNames, role]
+                          : form.roleNames.filter((r) => r !== role),
+                      });
+                    }}
+                  />
+                  <span>{role}</span>
+                </div>
+              ))}
+            </div>
           </div>
 
-          <DialogFooter className="mt-4">
+          <DialogFooter>
             <Button onClick={handleSave}>Lưu</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* CONFIRM DELETE */}
+      <AlertDialog
+        open={!!confirmDelete}
+        onOpenChange={() => setConfirmDelete(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xoá tài khoản?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Hành động này không thể hoàn tác.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Huỷ</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>Xoá</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }
