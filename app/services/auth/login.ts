@@ -30,8 +30,11 @@ export async function login(payload: LoginPayload): Promise<LoginResponse> {
   const data = await res.json()
 
   if (!res.ok) {
-    throw new Error(data.message || "Đăng nhập thất bại")
-  }
+  throw new Error(
+    data.messenger || data.message || "Đăng nhập thất bại"
+  )
+}
+
   // trả về phần `data` chứa token + refresh_token
   return data.data
 }
