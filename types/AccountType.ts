@@ -11,7 +11,9 @@ interface Role {
   permissions: Permission[];
 }
 
-interface Account {
+
+export interface Account {
+  id: number;
   username: string;
   phone: string;
   email: string;

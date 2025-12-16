@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable react-compiler/react-compiler */
+
 import React, { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
@@ -40,6 +42,13 @@ export type Order = {
     price: number;
     total: number;
   }[];
+};
+
+type PageInfo = {
+  currentPage: number;
+  totalPage: number;
+  hasNext: boolean;
+  hasPrevious: boolean;
 };
 
 // ====================== TABLE =====================
@@ -90,7 +99,7 @@ const OrdersTable = ({
       accessorKey: "status",
       header: "Trạng thái",
       cell: ({ row }) => {
-        const s = row.getValue("status");
+        const s = row.getValue("status") as string;
         const color =
           s === "OK"
             ? "text-green-600"
@@ -111,11 +120,15 @@ const OrdersTable = ({
               className="bg-white border border-gray-200 rounded-lg shadow-sm p-3 text-sm hover:shadow-md transition-shadow"
             >
               <div className="mb-1">
-                <span className="font-semibold text-gray-700">Mã Linh Kiện:</span>{" "}
+                <span className="font-semibold text-gray-700">
+                  Mã Linh Kiện:
+                </span>{" "}
                 {i.componentId}
               </div>
               <div className="mb-1">
-                <span className="font-semibold text-gray-700">Tên Linh Kiện:</span>{" "}
+                <span className="font-semibold text-gray-700">
+                  Tên Linh Kiện:
+                </span>{" "}
                 {i.componentName}
               </div>
               <div className="mb-1">
@@ -161,12 +174,11 @@ const OrdersTable = ({
                 const json = await res.json();
                 if (res.ok) {
                   alert("Xoá thành công!");
-                  // --- UPDATE UI NGAY ---
                   setData((prev) => prev.filter((o) => o.id !== id));
                 } else {
                   alert("Lỗi: " + json.error);
                 }
-              } catch (err) {
+              } catch (err: unknown) {
                 console.error(err);
                 alert("Có lỗi khi xoá đơn hàng!");
               }
@@ -200,7 +212,9 @@ const OrdersTable = ({
                   key={header.id}
                   className="cursor-pointer select-none"
                   onClick={() => {
-                    const current = sorting.find((s) => s.id === header.id);
+                    const current = sorting.find(
+                      (s) => s.id === header.id
+                    );
                     const newDesc = current ? !current.desc : false;
                     setSorting([{ id: header.id, desc: newDesc }]);
                   }}
@@ -233,7 +247,10 @@ const OrdersTable = ({
           <TableRow key={row.id}>
             {row.getVisibleCells().map((cell) => (
               <TableCell key={cell.id}>
-                {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                {flexRender(
+                  cell.column.columnDef.cell,
+                  cell.getContext()
+                )}
               </TableCell>
             ))}
           </TableRow>
@@ -249,7 +266,7 @@ export default function OrdersPage() {
 
   const [data, setData] = useState<Order[]>([]);
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [pageInfo, setPageInfo] = useState<any>({
+  const [pageInfo, setPageInfo] = useState<PageInfo>({
     currentPage: 1,
     totalPage: 1,
     hasNext: false,
@@ -262,14 +279,12 @@ export default function OrdersPage() {
   >("keyword");
   const [searchValue, setSearchValue] = useState<string>("");
 
-  // time filter
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
 
-  // ================= FETCH ORDERS =================
   const fetchPage = async (
     page: number,
-    keyword: string = "",
+    keyword = "",
     field: "keyword" | "minTotal" | "maxTotal" | "status" = "keyword",
     sortingState: SortingState = []
   ) => {
@@ -277,7 +292,7 @@ export default function OrdersPage() {
       const apiPage = page - 1;
       let query = `page=${apiPage}&size=20`;
 
-      if (keyword.trim() !== "" && field !== "time") {
+      if (keyword.trim() !== "") {
         query += `&${field}=${encodeURIComponent(keyword.trim())}`;
       }
 
@@ -291,45 +306,44 @@ export default function OrdersPage() {
       const res = await fetch(
         `https://api-lkdt.thanhcom.site/orders/search?${query}`,
         {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
         }
       );
+
       const json = await res.json();
       setData(json.data || []);
       setPageInfo(json.pageInfo);
       setJumpPage(page);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(err);
     }
   };
 
-  // ================= FETCH TIME =================
   const fetchTime = async () => {
     if (!start || !end) return;
 
     const dateFromISO = new Date(start).toISOString();
     const dateToISO = new Date(end).toISOString();
 
-    const url = `https://api-lkdt.thanhcom.site/orders/search?dateFrom=${encodeURIComponent(
-      dateFromISO
-    )}&dateTo=${encodeURIComponent(dateToISO)}`;
-    console.log("Fetch Time URL:", url);
-
     try {
-      const res = await fetch(url, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      });
-      if (!res.ok) {
-        const errJson = await res.json();
-        console.error("Error:", errJson);
-        alert(`Server trả lỗi: ${errJson.error}`);
-        return;
-      }
+      const res = await fetch(
+        `https://api-lkdt.thanhcom.site/orders/search?dateFrom=${encodeURIComponent(
+          dateFromISO
+        )}&dateTo=${encodeURIComponent(dateToISO)}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+
       const json = await res.json();
       setData(json.data || []);
       setPageInfo(json.pageInfo || pageInfo);
       setJumpPage(1);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(err);
     }
   };
@@ -352,7 +366,7 @@ export default function OrdersPage() {
 
       <Card className="shadow-lg">
         <CardContent>
-          {/* ================= SEARCH BAR ================= */}
+          {/* SEARCH */}
           <div className="mb-4 flex items-center gap-2">
             <select
               className="border px-2 py-1 rounded"
@@ -378,8 +392,6 @@ export default function OrdersPage() {
             {searchField !== "time" ? (
               <>
                 <input
-                  type="text"
-                  placeholder="Nhập từ khóa..."
                   className="border px-2 py-1 rounded flex-1"
                   value={searchValue}
                   onChange={(e) => setSearchValue(e.target.value)}
@@ -417,15 +429,14 @@ export default function OrdersPage() {
             )}
           </div>
 
-          {/* ================= TABLE ================= */}
           <OrdersTable
             data={data}
-            setData={setData} // <--- truyền setData để update UI
+            setData={setData}
             sorting={sorting}
             setSorting={setSorting}
           />
 
-          {/* ================= PAGINATION ================= */}
+          {/* PAGINATION */}
           <div className="flex items-center gap-2 mt-4">
             <button
               disabled={!pageInfo.hasPrevious}
@@ -434,7 +445,6 @@ export default function OrdersPage() {
             >
               Previous
             </button>
-            <span>Page</span>
             <input
               type="number"
               className="w-14 border px-2 py-1 rounded"

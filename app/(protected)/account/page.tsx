@@ -31,22 +31,9 @@ import {
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 
+import type { Account } from "@/types/AccountType";
+
 /* ================= TYPES ================= */
-
-interface Role {
-  id: number;
-  name: string;
-}
-
-interface Account {
-  id: number;
-  username: string;
-  fullname: string;
-  email: string;
-  phone: string;
-  active: boolean;
-  roles: Role[];
-}
 
 interface PageResponse<T> {
   content: T[];
@@ -178,7 +165,7 @@ export default function AccountPage() {
   /* ================= TOGGLE ACTIVE ================= */
 
   const toggleActive = (acc: Account) => {
-    fetch(`https://api-lkdt.thanhcom.site/account/toggle-active/${acc.id}`, {
+    fetch(`https://api-lkdt.thanhcom.site/account/toggle-active/${acc}`, {
       method: "PUT",
       headers: {
         Authorization: `Bearer ${token}`,

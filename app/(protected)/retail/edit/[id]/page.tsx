@@ -6,39 +6,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { ApiOrderResponse } from "@/types/ComponentData";
+import { ComponentItem } from "@/app/(protected)/component/page";
+import { Item, Order } from "@/types/OrderType";
 
-interface Customer {
-  id: number;
-  fullName: string;
-  phone: string;
-  email: string;
-  address: string;
-}
-
-interface ComponentItem {
-  id: number;
-  name: string;
-}
-
-interface Item {
-  componentId: number;
-  componentName: string;
-  quantity: number;
-  price: number;
-  total: number;
-}
-
-interface Order {
-  customer: Customer;
-  orderDate: string;
-  totalAmount: number;
-  status: string;
-  items: Item[];
-}
 
 export default function EditOrderPage() {
   const router = useRouter();
-  const params = useParams();
+  const params = useParams<{ id: string }>();
   const id = params.id;
 
   const [loading, setLoading] = useState(true);
@@ -46,12 +21,14 @@ export default function EditOrderPage() {
   const [error, setError] = useState<string | null>(null);
   const [order, setOrder] = useState<Order | null>(null);
 
-  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState<ComponentItem[]>([]);
   const [activeItemIndex, setActiveItemIndex] = useState<number | null>(null);
 
-  const recalcTotal = (items: Item[]) => items.reduce((sum, item) => sum + (item.total || 0), 0);
+  const recalcTotal = (items: Item[]) =>
+    items.reduce((sum, item) => sum + item.total, 0);
 
+  /* ===================== FETCH ORDER ===================== */
   useEffect(() => {
     const TOKEN = localStorage.getItem("token");
     if (!id || !TOKEN) {
@@ -62,32 +39,34 @@ export default function EditOrderPage() {
 
     const fetchOrder = async () => {
       try {
-        const res = await fetch(`https://api-lkdt.thanhcom.site/orders/${id}`, {
-          headers: { Authorization: `Bearer ${TOKEN}` },
-        });
-        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-        const data = await res.json();
+        const res = await fetch(
+          `https://api-lkdt.thanhcom.site/orders/${id}`,
+          {
+            headers: { Authorization: `Bearer ${TOKEN}` },
+          }
+        );
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-        const items: Item[] = data.data.items.map((i: any) => ({
+        const json: ApiOrderResponse = await res.json();
+
+        const items: Item[] = json.data.items.map((i) => ({
           componentId: i.componentId,
           componentName: i.componentName,
           quantity: i.quantity,
           price: i.price,
-          total: i.total || (i.quantity * i.price),
+          total: i.total ?? i.quantity * i.price,
         }));
 
         setOrder({
-          customer: data.data.customer,
-          orderDate: data.data.orderDate,
+          customer: json.data.customer,
+          orderDate: json.data.orderDate,
+          status: json.data.status,
+          items,
           totalAmount: recalcTotal(items),
-          status: data.data.status,
-          items: items,
         });
-
-        setError(null);
-      } catch (err) {
-        console.error(err);
-        setError("Không thể tải dữ liệu. Vui lòng kiểm tra token và mạng.");
+      } catch (e) {
+        console.error(e);
+        setError("Không thể tải dữ liệu đơn hàng");
       } finally {
         setLoading(false);
       }
@@ -96,133 +75,186 @@ export default function EditOrderPage() {
     fetchOrder();
   }, [id]);
 
+  /* ===================== SEARCH COMPONENT ===================== */
   useEffect(() => {
     const TOKEN = localStorage.getItem("token");
-    if (!searchTerm || activeItemIndex === null) return;
+    if (!TOKEN || !searchTerm || activeItemIndex === null) return;
+
     const timer = setTimeout(async () => {
       try {
-        const res = await fetch(`https://api-lkdt.thanhcom.site/components/search?q=${encodeURIComponent(searchTerm)}`, {
-          headers: { Authorization: `Bearer ${TOKEN}` },
-        });
+        const res = await fetch(
+          `https://api-lkdt.thanhcom.site/components/search?q=${encodeURIComponent(
+            searchTerm
+          )}`,
+          {
+            headers: { Authorization: `Bearer ${TOKEN}` },
+          }
+        );
         if (!res.ok) throw new Error("Search failed");
-        const data = await res.json();
-        setSearchResults(data.data);
-      } catch (err) {
-        console.error(err);
+        const json = await res.json();
+        setSearchResults(json.data);
+      } catch {
         setSearchResults([]);
       }
     }, 300);
+
     return () => clearTimeout(timer);
   }, [searchTerm, activeItemIndex]);
 
+  /* ===================== HANDLERS ===================== */
   const handleStatusChange = (value: string) => {
     if (!order) return;
     setOrder({ ...order, status: value });
   };
 
-  const handleItemChange = (idx: number, field: 'componentId' | 'componentName' | 'quantity' | 'price', value: any) => {
+  const handleItemChange = <K extends keyof Item>(
+    idx: number,
+    field: K,
+    value: Item[K]
+  ) => {
     if (!order) return;
+
     const newItems = [...order.items];
 
-    if (field === 'componentId') {
-      if (order.items.some((item, i) => i !== idx && item.componentId === value)) {
-        alert('Sản phẩm này đã có trong đơn hàng!');
+    if (field === "componentId") {
+      if (
+        order.items.some(
+          (item, i) => i !== idx && item.componentId === value
+        )
+      ) {
+        alert("Sản phẩm này đã có trong đơn hàng!");
         return;
       }
     }
 
     newItems[idx][field] = value;
 
-    if (field === 'quantity' || field === 'price') {
-      newItems[idx].total = newItems[idx].quantity * newItems[idx].price;
+    if (field === "quantity" || field === "price") {
+      newItems[idx].total =
+        newItems[idx].quantity * newItems[idx].price;
     }
 
-    setOrder({ ...order, items: newItems, totalAmount: recalcTotal(newItems) });
+    setOrder({
+      ...order,
+      items: newItems,
+      totalAmount: recalcTotal(newItems),
+    });
   };
 
   const handleAddItem = () => {
     if (!order) return;
-    const newItem: Item = { componentId: 0, componentName: '', quantity: 1, price: 0, total: 0 };
+
+    const newItem: Item = {
+      componentId: 0,
+      componentName: "",
+      quantity: 1,
+      price: 0,
+      total: 0,
+    };
+
     const newItems = [...order.items, newItem];
-    setOrder({ ...order, items: newItems, totalAmount: recalcTotal(newItems) });
+    setOrder({
+      ...order,
+      items: newItems,
+      totalAmount: recalcTotal(newItems),
+    });
     setActiveItemIndex(order.items.length);
   };
 
   const handleRemoveItem = (idx: number) => {
     if (!order) return;
+
     const newItems = order.items.filter((_, i) => i !== idx);
-    setOrder({ ...order, items: newItems, totalAmount: recalcTotal(newItems) });
+    setOrder({
+      ...order,
+      items: newItems,
+      totalAmount: recalcTotal(newItems),
+    });
   };
 
   const handleSave = async () => {
     if (!order) return;
+
     const TOKEN = localStorage.getItem("token");
     if (!TOKEN) {
-      alert("Bạn chưa đăng nhập!");
+      alert("Bạn chưa đăng nhập");
       return;
     }
 
     setSaving(true);
     try {
-      const body = {
-        status: order.status,
-        items: order.items.map(i => ({
-          componentId: i.componentId,
-          quantity: i.quantity,
-          price: i.price
-        })),
-      };
-      const res = await fetch(`https://api-lkdt.thanhcom.site/orders/update/${id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${TOKEN}`,
-        },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+      const res = await fetch(
+        `https://api-lkdt.thanhcom.site/orders/update/${id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${TOKEN}`,
+          },
+          body: JSON.stringify({
+            status: order.status,
+            items: order.items.map((i) => ({
+              componentId: i.componentId,
+              quantity: i.quantity,
+              price: i.price,
+            })),
+          }),
+        }
+      );
+
+      if (!res.ok) throw new Error("Save failed");
       router.back();
-    } catch (err) {
-      console.error(err);
-      alert("Lưu đơn hàng thất bại. Vui lòng thử lại.");
+    } catch (e) {
+      console.error(e);
+      alert("Lưu đơn hàng thất bại");
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) return <div className="p-4 text-center text-gray-500">Đang tải...</div>;
-  if (error) return <div className="p-4 text-red-600 text-center">{error}</div>;
+  /* ===================== RENDER ===================== */
+  if (loading)
+    return (
+      <div className="p-4 text-center text-gray-500">Đang tải...</div>
+    );
+
+  if (error)
+    return (
+      <div className="p-4 text-center text-red-600">{error}</div>
+    );
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
-      <Card className="shadow-lg rounded-lg border border-gray-200">
+      <Card>
         <CardContent className="p-6 space-y-6">
-
           <div className="flex justify-between items-center">
-            <h2 className="text-2xl font-bold text-gray-800">Chỉnh sửa đơn hàng #{id}</h2>
-            <span className="text-lg font-semibold text-blue-600">
-              Tổng: {(order?.totalAmount ?? 0).toLocaleString("vi-VN")}đ
+            <h2 className="text-2xl font-bold">
+              Chỉnh sửa đơn hàng #{id}
+            </h2>
+            <span className="font-semibold text-blue-600">
+              Tổng:{" "}
+              {(order?.totalAmount ?? 0).toLocaleString("vi-VN")}đ
             </span>
           </div>
 
-          {/* Customer info (readonly) */}
-          <section className="space-y-2 border-b pb-4">
-            <h3 className="font-semibold text-lg text-gray-700">Thông tin khách hàng</h3>
-            <div className="text-gray-800 grid grid-cols-2 gap-4">
-              <div><span className="font-semibold">Họ và tên:</span> {order?.customer.fullName}</div>
-              <div><span className="font-semibold">Số điện thoại:</span> {order?.customer.phone}</div>
-              <div><span className="font-semibold">Email:</span> {order?.customer.email}</div>
-              <div><span className="font-semibold">Địa chỉ:</span> {order?.customer.address}</div>
+          {/* CUSTOMER */}
+          <section className="border-b pb-4 space-y-2">
+            <h3 className="font-semibold">Khách hàng</h3>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>Họ tên: {order?.customer.fullName}</div>
+              <div>SĐT: {order?.customer.phone}</div>
+              <div>Email: {order?.customer.email}</div>
+              <div>Địa chỉ: {order?.customer.address}</div>
             </div>
           </section>
 
-          {/* Order info */}
-          <section className="space-y-2 border-b pb-4">
-            <h3 className="font-semibold text-lg text-gray-700">Trạng thái đơn hàng</h3>
+          {/* STATUS */}
+          <section className="border-b pb-4">
+            <Label>Trạng thái</Label>
             <select
               value={order?.status}
               onChange={(e) => handleStatusChange(e.target.value)}
-              className="w-full border border-gray-300 rounded px-2 py-1"
+              className="w-full border rounded px-2 py-1"
             >
               <option value="OK">Hoàn thành</option>
               <option value="PENDING">Đang xử lý</option>
@@ -230,62 +262,111 @@ export default function EditOrderPage() {
             </select>
           </section>
 
-          {/* Items list */}
-          <section className="space-y-4 relative">
-            <h3 className="font-semibold text-lg text-gray-700">Sản phẩm</h3>
-            <div className="space-y-3">
-              {order?.items.map((i, idx) => (
-                <div key={idx} className="border rounded-lg p-4 bg-gray-50 shadow-sm flex flex-col gap-3 relative">
-                  <div className="flex items-center gap-3">
-                    <div className="flex-1 relative">
-                      <Label>Chọn sản phẩm</Label>
-                      <Input
-                        type="text"
-                        value={i.componentName}
-                        onChange={(e) => {
-                          setActiveItemIndex(idx);
-                          setSearchTerm(e.target.value);
-                          handleItemChange(idx, 'componentName', e.target.value);
-                        }}
-                        placeholder="Gõ tên sản phẩm..."
-                      />
-                      {activeItemIndex === idx && searchResults.length > 0 && (
-                        <ul className="border rounded max-h-40 overflow-auto bg-white absolute z-10 w-full mt-1">
-                          {searchResults.map(c => (
-                            <li key={c.id} className="p-2 hover:bg-gray-100 cursor-pointer" onClick={() => {
-                              handleItemChange(idx, 'componentId', c.id);
-                              handleItemChange(idx, 'componentName', c.name);
-                              setSearchResults([]);
-                            }}>{c.name}</li>
+          {/* ITEMS */}
+          <section className="space-y-4">
+            {order?.items.map((i, idx) => (
+              <div
+                key={idx}
+                className="border rounded p-4 space-y-3"
+              >
+                <div className="flex gap-3">
+                  <div className="flex-1 relative">
+                    <Label>Sản phẩm</Label>
+                    <Input
+                      value={i.componentName}
+                      onChange={(e) => {
+                        setActiveItemIndex(idx);
+                        setSearchTerm(e.target.value);
+                        handleItemChange(
+                          idx,
+                          "componentName",
+                          e.target.value
+                        );
+                      }}
+                    />
+                    {activeItemIndex === idx &&
+                      searchResults.length > 0 && (
+                        <ul className="absolute z-10 bg-white border w-full max-h-40 overflow-auto">
+                          {searchResults.map((c) => (
+                            <li
+                              key={c.id}
+                              className="p-2 hover:bg-gray-100 cursor-pointer"
+                              onClick={() => {
+                                handleItemChange(
+                                  idx,
+                                  "componentId",
+                                  c.id
+                                );
+                                handleItemChange(
+                                  idx,
+                                  "componentName",
+                                  c.name
+                                );
+                                setSearchResults([]);
+                              }}
+                            >
+                              {c.name}
+                            </li>
                           ))}
                         </ul>
                       )}
-                    </div>
-                    <Button variant="destructive" size="sm" onClick={() => handleRemoveItem(idx)}>Xóa</Button>
                   </div>
-                  <div className="flex gap-4 items-center">
-                    <div className="flex flex-col">
-                      <Label>Số lượng</Label>
-                      <Input type="number" value={i.quantity} min={0} onChange={(e) => handleItemChange(idx, 'quantity', parseInt(e.target.value) || 0)} className="w-24" />
-                    </div>
-                    <div className="flex flex-col">
-                      <Label>Giá</Label>
-                      <Input type="number" value={i.price} min={0} onChange={(e) => handleItemChange(idx, 'price', parseFloat(e.target.value) || 0)} className="w-32" />
-                    </div>
-                    <div className="ml-auto font-semibold text-gray-800">Tổng: {(i.total ?? 0).toLocaleString("vi-VN")}đ</div>
+                  <Button
+                    variant="destructive"
+                    onClick={() => handleRemoveItem(idx)}
+                  >
+                    Xóa
+                  </Button>
+                </div>
+
+                <div className="flex gap-4 items-center">
+                  <div>
+                    <Label>Số lượng</Label>
+                    <Input
+                      type="number"
+                      value={i.quantity}
+                      onChange={(e) =>
+                        handleItemChange(
+                          idx,
+                          "quantity",
+                          Number(e.target.value) || 0
+                        )
+                      }
+                    />
+                  </div>
+                  <div>
+                    <Label>Giá</Label>
+                    <Input
+                      type="number"
+                      value={i.price}
+                      onChange={(e) =>
+                        handleItemChange(
+                          idx,
+                          "price",
+                          Number(e.target.value) || 0
+                        )
+                      }
+                    />
+                  </div>
+                  <div className="ml-auto font-semibold">
+                    Tổng: {i.total.toLocaleString("vi-VN")}đ
                   </div>
                 </div>
-              ))}
-            </div>
-            <Button onClick={handleAddItem} variant="outline">Thêm sản phẩm</Button>
+              </div>
+            ))}
+            <Button variant="outline" onClick={handleAddItem}>
+              Thêm sản phẩm
+            </Button>
           </section>
 
-          {/* Actions */}
-          <section className="flex justify-end gap-3 mt-4">
-            <Button variant="outline" onClick={() => router.back()}>Quay lại</Button>
-            <Button onClick={handleSave} disabled={saving}>{saving ? "Đang lưu..." : "Lưu thay đổi"}</Button>
-          </section>
-
+          <div className="flex justify-end gap-3">
+            <Button variant="outline" onClick={() => router.back()}>
+              Quay lại
+            </Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? "Đang lưu..." : "Lưu"}
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>

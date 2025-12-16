@@ -19,15 +19,7 @@ import {
   ColumnDef,
   SortingState,
 } from "@tanstack/react-table";
-
-// ====================== TYPES =====================
-export type Customer = {
-  id: number;
-  fullName: string;
-  phone: string;
-  email: string;
-  address: string;
-};
+import { Customer } from "@/types/CustomerType";
 
 // ====================== TABLE =====================
 const CustomerTable = ({
