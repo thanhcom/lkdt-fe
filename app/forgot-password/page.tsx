@@ -8,43 +8,94 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 
 export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState("")
+  const [username, setUsername] = useState("")
   const [message, setMessage] = useState("")
   const [error, setError] = useState("")
+  const [loading, setLoading] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!email) {
-      setError("Vui lòng nhập email")
+
+    if (!username.trim()) {
+      setError("Vui lòng nhập username")
       return
     }
+
     setError("")
-    console.log({ email })
-    setMessage("Yêu cầu đổi mật khẩu đã được gửi tới email của bạn (demo)")
+    setMessage("")
+    setLoading(true)
+
+    try {
+      const res = await fetch(
+        "https://api-lkdt.thanhcom.site/account/forgot-password",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            username: username.trim(),
+          }),
+        }
+      )
+
+      let data: any = {}
+      try {
+        data = await res.json()
+      } catch {
+        // backend không trả JSON
+      }
+
+      if (!res.ok) {
+        throw new Error(
+          data?.messenger ||
+          data?.message ||
+          "Gửi yêu cầu thất bại"
+        )
+      }
+
+      setMessage(
+        data?.messenger ||
+        "Yêu cầu đặt lại mật khẩu đã được gửi. Vui lòng kiểm tra email."
+      )
+      setUsername("")
+    } catch (err: any) {
+      setError(err.message || "Có lỗi xảy ra")
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50">
       <Card className="p-8 w-full max-w-md shadow-md">
-        <h1 className="text-2xl font-bold mb-6 text-center">Quên mật khẩu</h1>
+        <h1 className="text-2xl font-bold mb-6 text-center">
+          Quên mật khẩu
+        </h1>
+
         {error && <p className="text-red-500 mb-4">{error}</p>}
-        {message && <p className="text-green-500 mb-4">{message}</p>}
+        {message && <p className="text-green-600 mb-4">{message}</p>}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="username">Username</Label>
             <Input
-              id="email"
-              type="email"
-              placeholder="your@email.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              id="username"
+              type="text"
+              placeholder="Nhập username của bạn"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              disabled={loading}
               className="mt-1"
             />
           </div>
 
-          <Button type="submit" className="w-full mt-2">
-            Gửi yêu cầu
+          <Button
+            type="submit"
+            className="w-full mt-2"
+            disabled={loading}
+          >
+            {loading ? "Đang gửi..." : "Gửi yêu cầu"}
           </Button>
         </form>
 
