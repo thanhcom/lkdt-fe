@@ -25,7 +25,7 @@ export default function LoginPage() {
     if (token) {
       router.replace("/component");
     }
-  }, []);
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,13 +41,12 @@ export default function LoginPage() {
     try {
       const payload: LoginPayload = { username, password, remember };
       const data: LoginResponse = await login(payload);
-
       localStorage.setItem("token", data.token);
       localStorage.setItem("refreshToken", data.refresh_token);
-
       router.push("/component");
-    } catch (err: any) {
-      setError(err.message || "Đăng nhập thất bại");
+    } catch (err) {
+      if (err instanceof Error) setError(err.message);
+      else setError("Đã có lỗi xảy ra, vui lòng thử lại.");
     } finally {
       setLoading(false);
     }

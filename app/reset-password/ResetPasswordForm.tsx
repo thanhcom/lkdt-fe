@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export default function ResetPasswordForm() {
   const searchParams = useSearchParams();
@@ -54,32 +56,25 @@ export default function ResetPasswordForm() {
     <div style={{ maxWidth: 400, margin: "50px auto", textAlign: "center" }}>
       <h2>Đặt lại mật khẩu</h2>
       <form onSubmit={handleSubmit}>
-        <input
+        <Input
           type="password"
           placeholder="Mật khẩu mới"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           style={{ width: "100%", padding: 10, marginBottom: 10 }}
         />
-        <input
+        <Input
           type="password"
           placeholder="Xác nhận mật khẩu"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
           style={{ width: "100%", padding: 10, marginBottom: 10 }}
         />
-        <button
+        <Button
           type="submit"
-          style={{
-            padding: "10px 20px",
-            backgroundColor: "#1e88e5",
-            color: "#fff",
-            border: "none",
-            borderRadius: 5,
-          }}
         >
           Đặt lại mật khẩu
-        </button>
+        </Button>
       </form>
       {message && <p style={{ marginTop: 15, color: "red" }}>{message}</p>}
     </div>
