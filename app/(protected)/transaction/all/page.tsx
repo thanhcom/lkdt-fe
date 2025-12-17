@@ -19,23 +19,8 @@ import {
   ColumnDef,
   SortingState,
 } from "@tanstack/react-table";
+import { Transaction } from "@/types/TransactionType";
 
-export type Transaction = {
-  id: number;
-  transactionType: string;
-  quantity: number;
-  transactionDate: string;
-  note: string;
-  component: {
-    name: string;
-    type: string;
-    stockQuantity: number;
-  };
-  project: {
-    name: string;
-    description: string;
-  };
-};
 
 const TransactionTable = ({
   data,
@@ -52,11 +37,12 @@ const TransactionTable = ({
 
   const columns: ColumnDef<Transaction>[] = [
     { accessorKey: "id", header: "ID" },
+
     {
       accessorKey: "transactionType",
       header: "Loại",
       cell: ({ row }) => {
-        const type = row.getValue("transactionType");
+        const type = row.getValue("transactionType") as string; // ✅ FIX
         return (
           <span
             className={
@@ -70,14 +56,24 @@ const TransactionTable = ({
         );
       },
     },
-    { accessorKey: "quantity", header: "Số lượng" },
+
+    {
+      accessorKey: "quantity",
+      header: "Số lượng",
+      cell: ({ row }) => row.getValue("quantity") as number, // ✅ FIX
+    },
+
     {
       accessorKey: "transactionDate",
       header: "Ngày",
-      cell: ({ row }) =>
-        new Date(row.getValue("transactionDate")).toLocaleString(),
+      cell: ({ row }) => {
+        const value = row.getValue("transactionDate") as string; // ✅ FIX
+        return new Date(value).toLocaleString();
+      },
     },
+
     { accessorKey: "note", header: "Ghi chú" },
+
     {
       id: "component",
       header: "Linh kiện",
@@ -92,6 +88,7 @@ const TransactionTable = ({
         );
       },
     },
+
     {
       id: "project",
       header: "Dự án",
@@ -105,57 +102,55 @@ const TransactionTable = ({
         );
       },
     },
+
     {
       id: "actions",
       header: "Hành động",
-      cell: ({ row }) => {
-        return (
-          <div className="flex gap-2">
-            <button
-              className="px-2 py-1 bg-blue-500 text-white rounded"
-              onClick={() =>
-                router.push(`/transaction/edit/${row.original.id}`)
-              }
-            >
-              Edit
-            </button>
-            <button
-              className="px-2 py-1 bg-red-500 text-white rounded"
-              onClick={async () => {
-                const id = row.original.id;
-                if (!confirm(`Bạn có chắc muốn xoá transaction ${id}?`)) return;
+      cell: ({ row }) => (
+        <div className="flex gap-2">
+          <button
+            className="px-2 py-1 bg-blue-500 text-white rounded"
+            onClick={() =>
+              router.push(`/transaction/edit/${row.original.id}`)
+            }
+          >
+            Edit
+          </button>
 
-                try {
-                  const res = await fetch(
-                    `https://api-lkdt.thanhcom.site/transaction/delete/${id}`,
-                    {
-                      method: "DELETE",
-                      headers: {
-                        Authorization: `Bearer ${localStorage.getItem(
-                          "token"
-                        )}`,
-                      },
-                    }
-                  );
+          <button
+            className="px-2 py-1 bg-red-500 text-white rounded"
+            onClick={async () => {
+              const id = row.original.id;
+              if (!confirm(`Bạn có chắc muốn xoá transaction ${id}?`)) return;
 
-                  const json = await res.json();
-
-                  if (res.ok) {
-                    alert(`Xoá transaction ${id} thành công!`);
-                  } else {
-                    alert(`Lỗi khi xoá: ${JSON.stringify(json)}`);
+              try {
+                const res = await fetch(
+                  `https://api-lkdt.thanhcom.site/transaction/delete/${id}`,
+                  {
+                    method: "DELETE",
+                    headers: {
+                      Authorization: `Bearer ${localStorage.getItem("token")}`,
+                    },
                   }
-                } catch (err) {
-                  console.error(err);
-                  alert("Có lỗi xảy ra khi xoá transaction!");
+                );
+
+                const json = await res.json();
+
+                if (res.ok) {
+                  alert(`Xoá transaction ${id} thành công!`);
+                } else {
+                  alert(`Lỗi khi xoá: ${JSON.stringify(json)}`);
                 }
-              }}
-            >
-              Delete
-            </button>
-          </div>
-        );
-      },
+              } catch (err) {
+                console.error(err);
+                alert("Có lỗi xảy ra khi xoá transaction!");
+              }
+            }}
+          >
+            Delete
+          </button>
+        </div>
+      ),
     },
   ];
 
