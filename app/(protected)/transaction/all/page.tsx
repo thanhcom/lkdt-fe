@@ -20,6 +20,7 @@ import {
   SortingState,
 } from "@tanstack/react-table";
 import { Transaction } from "@/types/TransactionType";
+import { PageInfo } from "@/types/PageInfoType";
 
 
 const TransactionTable = ({
@@ -221,12 +222,13 @@ const TransactionTable = ({
 export default function TransactionPage() {
   const router = useRouter();
   const [data, setData] = useState<Transaction[]>([]);
-  const [pageInfo, setPageInfo] = useState<any>({
-    currentPage: 1,
-    totalPage: 1,
-    hasNext: false,
-    hasPrevious: false,
-  });
+  const [pageInfo, setPageInfo] = useState<Partial<PageInfo>>({
+  currentPage: 1,
+  totalPage: 1,
+  hasNext: false,
+  hasPrevious: false,
+});
+
   const [sorting, setSorting] = useState<SortingState>([]);
   const [jumpPage, setJumpPage] = useState<number>(1);
 
@@ -397,7 +399,7 @@ export default function TransactionPage() {
               onClick={() => {
                 if (searchField !== "time") {
                   fetchPage(
-                    pageInfo.currentPage - 1,
+                    pageInfo.currentPage ? pageInfo.currentPage - 1 : 1,
                     searchValue,
                     searchField,
                     sorting
@@ -440,7 +442,7 @@ export default function TransactionPage() {
               onClick={() => {
                 if (searchField !== "time") {
                   fetchPage(
-                    pageInfo.currentPage + 1,
+                    pageInfo.currentPage ? pageInfo.currentPage + 1 : 1,
                     searchValue,
                     searchField,
                     sorting

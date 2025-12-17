@@ -8,16 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useRouter, useParams } from "next/navigation";
 import { ComponentData } from "@/types/ComponentData";
 import { ProjectType } from "@/types/ProjectType";
-
-type TransactionType = {
-  id: number;
-  transactionType: string;
-  quantity: number;
-  transactionDate: string;
-  note: string;
-  component: ComponentData;
-  project: ProjectType;
-};
+import { TransactionType } from "@/types/TransactionType";
 
 export default function EditTransaction() {
   const router = useRouter();

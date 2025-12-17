@@ -19,23 +19,8 @@ import {
   ColumnDef,
   SortingState,
 } from "@tanstack/react-table";
-
-export type Transaction = {
-  id: number;
-  transactionType: string;
-  quantity: number;
-  transactionDate: string;
-  note: string;
-  component: {
-    name: string;
-    type: string;
-    stockQuantity: number;
-  };
-  project: {
-    name: string;
-    description: string;
-  };
-};
+import { Transaction } from "@/types/TransactionType";
+import { PageInfo } from "@/types/PageInfoType";
 
 const TransactionTable = ({
   data,
@@ -52,11 +37,12 @@ const TransactionTable = ({
 
   const columns: ColumnDef<Transaction>[] = [
     { accessorKey: "id", header: "ID" },
+
     {
       accessorKey: "transactionType",
       header: "Loại",
       cell: ({ row }) => {
-        const type = row.getValue("transactionType");
+        const type = row.getValue("transactionType") as string; // ✅ FIX
         return (
           <span
             className={
@@ -70,14 +56,24 @@ const TransactionTable = ({
         );
       },
     },
-    { accessorKey: "quantity", header: "Số lượng" },
+
+    {
+      accessorKey: "quantity",
+      header: "Số lượng",
+      cell: ({ row }) => row.getValue("quantity") as number, // ✅ FIX
+    },
+
     {
       accessorKey: "transactionDate",
       header: "Ngày",
-      cell: ({ row }) =>
-        new Date(row.getValue("transactionDate")).toLocaleString(),
+      cell: ({ row }) => {
+        const value = row.getValue("transactionDate") as string; // ✅ FIX
+        return new Date(value).toLocaleString();
+      },
     },
+
     { accessorKey: "note", header: "Ghi chú" },
+
     {
       id: "component",
       header: "Linh kiện",
@@ -92,6 +88,7 @@ const TransactionTable = ({
         );
       },
     },
+
     {
       id: "project",
       header: "Dự án",
@@ -105,57 +102,53 @@ const TransactionTable = ({
         );
       },
     },
+
     {
       id: "actions",
       header: "Hành động",
-      cell: ({ row }) => {
-        return (
-          <div className="flex gap-2">
-            <button
-              className="px-2 py-1 bg-blue-500 text-white rounded"
-              onClick={() =>
-                router.push(`/transaction/edit/${row.original.id}`)
-              }
-            >
-              Edit
-            </button>
-            <button
-              className="px-2 py-1 bg-red-500 text-white rounded"
-              onClick={async () => {
-                const id = row.original.id;
-                if (!confirm(`Bạn có chắc muốn xoá transaction ${id}?`)) return;
+      cell: ({ row }) => (
+        <div className="flex gap-2">
+          <button
+            className="px-2 py-1 bg-blue-500 text-white rounded"
+            onClick={() => router.push(`/transaction/edit/${row.original.id}`)}
+          >
+            Edit
+          </button>
 
-                try {
-                  const res = await fetch(
-                    `https://api-lkdt.thanhcom.site/transaction/delete/${id}`,
-                    {
-                      method: "DELETE",
-                      headers: {
-                        Authorization: `Bearer ${localStorage.getItem(
-                          "token"
-                        )}`,
-                      },
-                    }
-                  );
+          <button
+            className="px-2 py-1 bg-red-500 text-white rounded"
+            onClick={async () => {
+              const id = row.original.id;
+              if (!confirm(`Bạn có chắc muốn xoá transaction ${id}?`)) return;
 
-                  const json = await res.json();
-
-                  if (res.ok) {
-                    alert(`Xoá transaction ${id} thành công!`);
-                  } else {
-                    alert(`Lỗi khi xoá: ${JSON.stringify(json)}`);
+              try {
+                const res = await fetch(
+                  `https://api-lkdt.thanhcom.site/transaction/delete/${id}`,
+                  {
+                    method: "DELETE",
+                    headers: {
+                      Authorization: `Bearer ${localStorage.getItem("token")}`,
+                    },
                   }
-                } catch (err) {
-                  console.error(err);
-                  alert("Có lỗi xảy ra khi xoá transaction!");
+                );
+
+                const json = await res.json();
+
+                if (res.ok) {
+                  alert(`Xoá transaction ${id} thành công!`);
+                } else {
+                  alert(`Lỗi khi xoá: ${JSON.stringify(json)}`);
                 }
-              }}
-            >
-              Delete
-            </button>
-          </div>
-        );
-      },
+              } catch (err) {
+                console.error(err);
+                alert("Có lỗi xảy ra khi xoá transaction!");
+              }
+            }}
+          >
+            Delete
+          </button>
+        </div>
+      ),
     },
   ];
 
@@ -226,12 +219,13 @@ const TransactionTable = ({
 export default function TransactionPage() {
   const router = useRouter();
   const [data, setData] = useState<Transaction[]>([]);
-  const [pageInfo, setPageInfo] = useState<any>({
+  const [pageInfo, setPageInfo] = useState<Partial<PageInfo>>({
     currentPage: 1,
     totalPage: 1,
     hasNext: false,
     hasPrevious: false,
   });
+
   const [sorting, setSorting] = useState<SortingState>([]);
   const [jumpPage, setJumpPage] = useState<number>(1);
 
@@ -304,25 +298,50 @@ export default function TransactionPage() {
     }
   };
 
+   const toLocalDatetime = (date: Date) => {
+    const pad = (n: number) => n.toString().padStart(2, "0");
+    return (
+      date.getFullYear() +
+      "-" +
+      pad(date.getMonth() + 1) +
+      "-" +
+      pad(date.getDate()) +
+      "T" +
+      pad(date.getHours()) +
+      ":" +
+      pad(date.getMinutes())
+    );
+  };
+
   useEffect(() => {
     const loadInitial = async () => {
-      const today = new Date();
-      const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, ...
+      const now = new Date();
 
-      // Nếu muốn tuần bắt đầu từ thứ 2
-      const startOfWeek = new Date(today);
-      startOfWeek.setDate(today.getDate() - ((dayOfWeek + 6) % 7));
+      // ISO week: Monday = 1, Sunday = 0
+      const day = now.getDay() === 0 ? 7 : now.getDay();
 
-      const startISO = startOfWeek.toISOString();
-      const endISO = today.toISOString();
+      const startOfWeek = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate() - day + 1,
+        0,
+        0,
+        0
+      );
 
-      setStartDate(startISO.slice(0, 16)); // datetime-local format
-      setEndDate(endISO.slice(0, 16));
+      const startLocal = toLocalDatetime(startOfWeek);
+      const endLocal = toLocalDatetime(now);
+;
 
-      await fetchPageWithTime(startISO, endISO);
+      setSearchField("time");
+      setStartDate(startLocal);
+      setEndDate(endLocal);
+
+      await fetchPageWithTime(startLocal, endLocal);
     };
 
     loadInitial();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -415,7 +434,7 @@ export default function TransactionPage() {
               onClick={() => {
                 if (searchField !== "time") {
                   fetchPage(
-                    pageInfo.currentPage - 1,
+                    pageInfo.currentPage ? pageInfo.currentPage - 1 : 1,
                     searchValue,
                     searchField,
                     sorting
@@ -458,7 +477,7 @@ export default function TransactionPage() {
               onClick={() => {
                 if (searchField !== "time") {
                   fetchPage(
-                    pageInfo.currentPage + 1,
+                    pageInfo.currentPage ? pageInfo.currentPage + 1 : 1,
                     searchValue,
                     searchField,
                     sorting

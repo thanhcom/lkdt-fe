@@ -19,23 +19,8 @@ import {
   ColumnDef,
   SortingState,
 } from "@tanstack/react-table";
-
-export type Transaction = {
-  id: number;
-  transactionType: string;
-  quantity: number;
-  transactionDate: string;
-  note: string;
-  component: {
-    name: string;
-    type: string;
-    stockQuantity: number;
-  };
-  project: {
-    name: string;
-    description: string;
-  };
-};
+import { Transaction } from "@/types/TransactionType";
+import { PageInfo } from "@/types/PageInfoType";
 
 const TransactionTable = ({
   data,
@@ -52,11 +37,12 @@ const TransactionTable = ({
 
   const columns: ColumnDef<Transaction>[] = [
     { accessorKey: "id", header: "ID" },
+
     {
       accessorKey: "transactionType",
       header: "Loại",
       cell: ({ row }) => {
-        const type = row.getValue("transactionType");
+        const type = row.getValue("transactionType") as string; // ✅ FIX
         return (
           <span
             className={
@@ -70,14 +56,24 @@ const TransactionTable = ({
         );
       },
     },
-    { accessorKey: "quantity", header: "Số lượng" },
+
+    {
+      accessorKey: "quantity",
+      header: "Số lượng",
+      cell: ({ row }) => row.getValue("quantity") as number, // ✅ FIX
+    },
+
     {
       accessorKey: "transactionDate",
       header: "Ngày",
-      cell: ({ row }) =>
-        new Date(row.getValue("transactionDate")).toLocaleString(),
+      cell: ({ row }) => {
+        const value = row.getValue("transactionDate") as string; // ✅ FIX
+        return new Date(value).toLocaleString();
+      },
     },
+
     { accessorKey: "note", header: "Ghi chú" },
+
     {
       id: "component",
       header: "Linh kiện",
@@ -92,6 +88,7 @@ const TransactionTable = ({
         );
       },
     },
+
     {
       id: "project",
       header: "Dự án",
@@ -105,57 +102,53 @@ const TransactionTable = ({
         );
       },
     },
+
     {
       id: "actions",
       header: "Hành động",
-      cell: ({ row }) => {
-        return (
-          <div className="flex gap-2">
-            <button
-              className="px-2 py-1 bg-blue-500 text-white rounded"
-              onClick={() =>
-                router.push(`/transaction/edit/${row.original.id}`)
-              }
-            >
-              Edit
-            </button>
-            <button
-              className="px-2 py-1 bg-red-500 text-white rounded"
-              onClick={async () => {
-                const id = row.original.id;
-                if (!confirm(`Bạn có chắc muốn xoá transaction ${id}?`)) return;
+      cell: ({ row }) => (
+        <div className="flex gap-2">
+          <button
+            className="px-2 py-1 bg-blue-500 text-white rounded"
+            onClick={() => router.push(`/transaction/edit/${row.original.id}`)}
+          >
+            Edit
+          </button>
 
-                try {
-                  const res = await fetch(
-                    `https://api-lkdt.thanhcom.site/transaction/delete/${id}`,
-                    {
-                      method: "DELETE",
-                      headers: {
-                        Authorization: `Bearer ${localStorage.getItem(
-                          "token"
-                        )}`,
-                      },
-                    }
-                  );
+          <button
+            className="px-2 py-1 bg-red-500 text-white rounded"
+            onClick={async () => {
+              const id = row.original.id;
+              if (!confirm(`Bạn có chắc muốn xoá transaction ${id}?`)) return;
 
-                  const json = await res.json();
-
-                  if (res.ok) {
-                    alert(`Xoá transaction ${id} thành công!`);
-                  } else {
-                    alert(`Lỗi khi xoá: ${JSON.stringify(json)}`);
+              try {
+                const res = await fetch(
+                  `https://api-lkdt.thanhcom.site/transaction/delete/${id}`,
+                  {
+                    method: "DELETE",
+                    headers: {
+                      Authorization: `Bearer ${localStorage.getItem("token")}`,
+                    },
                   }
-                } catch (err) {
-                  console.error(err);
-                  alert("Có lỗi xảy ra khi xoá transaction!");
+                );
+
+                const json = await res.json();
+
+                if (res.ok) {
+                  alert(`Xoá transaction ${id} thành công!`);
+                } else {
+                  alert(`Lỗi khi xoá: ${JSON.stringify(json)}`);
                 }
-              }}
-            >
-              Delete
-            </button>
-          </div>
-        );
-      },
+              } catch (err) {
+                console.error(err);
+                alert("Có lỗi xảy ra khi xoá transaction!");
+              }
+            }}
+          >
+            Delete
+          </button>
+        </div>
+      ),
     },
   ];
 
@@ -223,64 +216,37 @@ const TransactionTable = ({
   );
 };
 
-export default function TransactionTodayPage() {
+export default function TransactionPage() {
   const router = useRouter();
   const [data, setData] = useState<Transaction[]>([]);
-  const [pageInfo, setPageInfo] = useState<any>({
+  const [pageInfo, setPageInfo] = useState<Partial<PageInfo>>({
     currentPage: 1,
     totalPage: 1,
     hasNext: false,
     hasPrevious: false,
   });
+
   const [sorting, setSorting] = useState<SortingState>([]);
   const [jumpPage, setJumpPage] = useState<number>(1);
 
-  const [searchField, setSearchField] = useState<"componentName" | "type">(
-    "componentName"
-  );
+  const [searchField, setSearchField] = useState<
+    "componentName" | "type" | "projectName" | "time"
+  >("componentName");
   const [searchValue, setSearchValue] = useState<string>("");
 
-  // ======================
-  // Ngày hôm nay
-  // ======================
-  const getTodayRange = () => {
-    const now = new Date();
-    const start = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate(),
-      0,
-      0,
-      0
-    ).toISOString();
-    const end = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate(),
-      23,
-      59,
-      59
-    ).toISOString();
-    return { start, end };
-  };
+  // Start/End time picker
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
 
   const fetchPage = async (
     page: number,
     keyword: string = "",
-    field: "componentName" | "type" = "componentName",
+    field: "componentName" | "type" | "projectName" = "componentName",
     sortingState: SortingState = []
   ) => {
-    const { start, end } = getTodayRange();
     try {
-      const sortQuery =
-        sortingState.length > 0
-          ? `&sortField=${sortingState[0].id}&sortOrder=${
-              sortingState[0].desc ? "desc" : "asc"
-            }`
-          : "";
-
       const res = await fetch(
-        `https://api-lkdt.thanhcom.site/transaction/search?start=${start}&end=${end}`,
+        `https://api-lkdt.thanhcom.site/transaction/search?${field}=${keyword}&sort=id`,
         {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         }
@@ -301,14 +267,84 @@ export default function TransactionTodayPage() {
     }
   };
 
+  const fetchPageWithTime = async (start: string, end: string) => {
+    if (!start || !end) return;
+    try {
+      // convert datetime-local => ISO string đầy đủ
+      const startISO = new Date(start).toISOString();
+      const endISO = new Date(end).toISOString();
+
+      const res = await fetch(
+        `https://api-lkdt.thanhcom.site/transaction/search?start=${encodeURIComponent(
+          startISO
+        )}&end=${encodeURIComponent(endISO)}`,
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        }
+      );
+
+      if (!res.ok) {
+        const errJson = await res.json();
+        console.error("Error:", errJson);
+        alert(`Server trả lỗi: ${errJson.error}`);
+        return;
+      }
+
+      const json = await res.json();
+      setData(json.data || []);
+      setPageInfo(json.pageInfo || pageInfo);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const toLocalDatetime = (date: Date) => {
+    const pad = (n: number) => n.toString().padStart(2, "0");
+    return (
+      date.getFullYear() +
+      "-" +
+      pad(date.getMonth() + 1) +
+      "-" +
+      pad(date.getDate()) +
+      "T" +
+      pad(date.getHours()) +
+      ":" +
+      pad(date.getMinutes())
+    );
+  };
+
   useEffect(() => {
-    fetchPage(1);
+    const loadInitial = async () => {
+      const now = new Date();
+
+      // 00:00:00 hôm nay
+      const startOfToday = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+        0,
+        0,
+        0
+      );
+
+      const startLocal = toLocalDatetime(startOfToday);
+      const endLocal = toLocalDatetime(now);
+
+      setSearchField("time");
+      setStartDate(startLocal);
+      setEndDate(endLocal);
+
+      await fetchPageWithTime(startLocal, endLocal);
+    };
+
+    loadInitial();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
     <div className="p-6 space-y-4">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Giao dịch hôm nay</h1>
+        <h1 className="text-2xl font-bold">Quản lý giao dịch</h1>
         <button
           className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
           onClick={() => router.push("/transaction/create")}
@@ -319,32 +355,67 @@ export default function TransactionTodayPage() {
 
       <Card className="shadow-lg">
         <CardContent>
+          {/* Search componentName/type/projectName */}
           <div className="mb-4 flex items-center gap-2">
             <select
               className="border px-2 py-1 rounded"
               value={searchField}
               onChange={(e) =>
-                setSearchField(e.target.value as "componentName" | "type")
+                setSearchField(
+                  e.target.value as
+                    | "componentName"
+                    | "type"
+                    | "projectName"
+                    | "time"
+                )
               }
             >
               <option value="componentName">Tên linh kiện</option>
               <option value="type">Loại Giao Dịch</option>
+              <option value="projectName">Tên Project</option>
+              <option value="time">Theo thời gian</option>
             </select>
 
-            <input
-              type="text"
-              placeholder="Nhập từ khóa..."
-              value={searchValue}
-              onChange={(e) => setSearchValue(e.target.value)}
-              className="border px-2 py-1 rounded flex-1"
-            />
-
-            <button
-              className="px-3 py-1 bg-blue-500 text-white rounded"
-              onClick={() => fetchPage(1, searchValue, searchField, sorting)}
-            >
-              Tìm kiếm
-            </button>
+            {searchField !== "time" ? (
+              <>
+                <input
+                  type="text"
+                  placeholder="Nhập từ khóa..."
+                  value={searchValue}
+                  onChange={(e) => setSearchValue(e.target.value)}
+                  className="border px-2 py-1 rounded flex-1"
+                />
+                <button
+                  className="px-3 py-1 bg-blue-500 text-white rounded"
+                  onClick={() =>
+                    fetchPage(1, searchValue, searchField, sorting)
+                  }
+                >
+                  Tìm kiếm
+                </button>
+              </>
+            ) : (
+              <>
+                <input
+                  type="datetime-local"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="border px-2 py-1 rounded"
+                />
+                <input
+                  type="datetime-local"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="border px-2 py-1 rounded"
+                />
+                <button
+                  className="px-3 py-1 bg-blue-500 text-white rounded"
+                  onClick={() => fetchPageWithTime(startDate, endDate)}
+                >
+                  Tìm theo thời gian
+                </button>
+              </>
+            )}
           </div>
 
           <TransactionTable
@@ -357,14 +428,18 @@ export default function TransactionTodayPage() {
             <button
               className="px-3 py-1 border rounded disabled:opacity-50"
               disabled={!pageInfo.hasPrevious}
-              onClick={() =>
-                fetchPage(
-                  pageInfo.currentPage - 1,
-                  searchValue,
-                  searchField,
-                  sorting
-                )
-              }
+              onClick={() => {
+                if (searchField !== "time") {
+                  fetchPage(
+                    pageInfo.currentPage ? pageInfo.currentPage - 1 : 1,
+                    searchValue,
+                    searchField,
+                    sorting
+                  );
+                } else {
+                  fetchPageWithTime(startDate, endDate);
+                }
+              }}
             >
               Previous
             </button>
@@ -380,9 +455,13 @@ export default function TransactionTodayPage() {
             />
             <button
               className="px-3 py-1 border rounded"
-              onClick={() =>
-                fetchPage(jumpPage, searchValue, searchField, sorting)
-              }
+              onClick={() => {
+                if (searchField !== "time") {
+                  fetchPage(jumpPage, searchValue, searchField, sorting);
+                } else {
+                  fetchPageWithTime(startDate, endDate);
+                }
+              }}
             >
               Go
             </button>
@@ -392,14 +471,18 @@ export default function TransactionTodayPage() {
             <button
               className="px-3 py-1 border rounded disabled:opacity-50"
               disabled={!pageInfo.hasNext}
-              onClick={() =>
-                fetchPage(
-                  pageInfo.currentPage + 1,
-                  searchValue,
-                  searchField,
-                  sorting
-                )
-              }
+              onClick={() => {
+                if (searchField !== "time") {
+                  fetchPage(
+                    pageInfo.currentPage ? pageInfo.currentPage + 1 : 1,
+                    searchValue,
+                    searchField,
+                    sorting
+                  );
+                } else {
+                  fetchPageWithTime(startDate, endDate);
+                }
+              }}
             >
               Next
             </button>
