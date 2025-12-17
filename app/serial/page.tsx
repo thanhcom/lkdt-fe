@@ -12,7 +12,6 @@ export default function SerialConsole() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const readerRef = useRef<ReadableStreamDefaultReader<Uint8Array> | null>(null);
 
-  // Auto scroll when new data arrives
   useEffect(() => {
     scrollRef.current?.scrollTo({
       top: scrollRef.current.scrollHeight,
@@ -27,14 +26,12 @@ export default function SerialConsole() {
 
       setPort(selectedPort);
       setConnected(true);
-
       setOutput((prev) => [...prev, "✔ Đã kết nối Arduino"]);
 
       const decoder = new TextDecoder();
       const reader = selectedPort.readable!.getReader();
       readerRef.current = reader;
 
-      // Read stream loop
       while (true) {
         const { value, done } = await reader.read();
         if (done) break;
@@ -45,13 +42,14 @@ export default function SerialConsole() {
           setOutput((prev) => [...prev, ...lines]);
         }
       }
-    } catch (err: any) {
-      setOutput((prev) => [...prev, "❌ Lỗi: " + err.message]);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      setOutput((prev) => [...prev, "❌ Lỗi: " + message]);
     }
   };
 
   const sendData = async () => {
-    if (!port) return;
+    if (!port || !input) return;
 
     const writer = port.writable!.getWriter();
     await writer.write(new TextEncoder().encode(input + "\n"));
@@ -64,31 +62,27 @@ export default function SerialConsole() {
   const disconnect = async () => {
     if (!port) return;
 
+    setOutput((prev) => [...prev, "⚠ Đang ngắt kết nối..."]);
+
+    const reader = readerRef.current;
+    if (reader) {
+      try {
+        await reader.cancel();
+      } catch {}
+      try {
+        reader.releaseLock();
+      } catch {}
+    }
+    readerRef.current = null;
+
     try {
-      setOutput((prev) => [...prev, "⚠ Đang ngắt kết nối..."]);
-
-      const reader = readerRef.current;
-      if (reader) {
-        try {
-          await reader.cancel(); // cancel reading
-        } catch (e) {}
-
-        try {
-          reader.releaseLock(); // release lock
-        } catch (e) {}
-      }
-
-      readerRef.current = null;
-
-      // finally close the serial port
       await port.close();
-
       setConnected(false);
       setPort(null);
-
       setOutput((prev) => [...prev, "✔ Đã ngắt kết nối"]);
-    } catch (err: any) {
-      setOutput((prev) => [...prev, "❌ Lỗi khi ngắt kết nối: " + err.message]);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      setOutput((prev) => [...prev, "❌ Lỗi khi ngắt kết nối: " + message]);
     }
   };
 
