@@ -46,7 +46,12 @@ export default function UserInfoPage() {
     fetchUserInfo();
   }, []);
 
-  if (loading) return <p className="p-4">Đang tải thông tin...</p>;
+  if (loading)
+  return (
+    <div className="flex min-h-screen items-center justify-center">
+      <p className="text-lg font-medium">Đang tải thông tin...</p>
+    </div>
+  );
   if (!user)
     return (
       <div className="p-4">
