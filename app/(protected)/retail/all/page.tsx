@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable react-compiler/react-compiler */
+
 import React, { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
@@ -20,7 +22,7 @@ import {
   SortingState,
 } from "@tanstack/react-table";
 
-/* ====================== TYPES ===================== */
+// ====================== TYPES =====================
 export type Order = {
   id: number;
   customer: {
@@ -49,7 +51,7 @@ type PageInfo = {
   hasPrevious: boolean;
 };
 
-/* ====================== TABLE ===================== */
+// ====================== TABLE =====================
 const OrdersTable = ({
   data,
   setData,
@@ -113,11 +115,11 @@ const OrdersTable = ({
       id: "items",
       header: "Sản phẩm",
       cell: ({ row }) => (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-3">
           {row.original.items.map((i, idx) => (
             <div
               key={idx}
-              className="border rounded p-2 text-sm bg-white shadow-sm"
+              className="bg-white border border-gray-200 rounded-lg shadow-sm p-3 text-sm"
             >
               <div>
                 <b>Mã:</b> {i.componentId}
@@ -129,8 +131,7 @@ const OrdersTable = ({
                 <b>Số lượng:</b> {i.quantity}
               </div>
               <div>
-                <b>Đơn giá:</b>{" "}
-                {i.price.toLocaleString("vi-VN")} đ
+                <b>Đơn giá:</b> {i.price.toLocaleString("vi-VN")} đ
               </div>
             </div>
           ))}
@@ -165,7 +166,6 @@ const OrdersTable = ({
                   }
                 );
                 const json = await res.json();
-
                 if (res.ok) {
                   setData((prev) => prev.filter((o) => o.id !== id));
                   alert("Xoá thành công!");
@@ -205,9 +205,7 @@ const OrdersTable = ({
                   key={header.id}
                   className="cursor-pointer select-none"
                   onClick={() => {
-                    const current = sorting.find(
-                      (s) => s.id === header.id
-                    );
+                    const current = sorting.find((s) => s.id === header.id);
                     const newDesc = current ? !current.desc : false;
                     setSorting([{ id: header.id, desc: newDesc }]);
                   }}
@@ -216,18 +214,7 @@ const OrdersTable = ({
                     header.column.columnDef.header,
                     header.getContext()
                   )}
-                  {sort && (
-                    <span
-                      className="ml-1 inline-block"
-                      style={{
-                        transform: sort.desc
-                          ? "rotate(0deg)"
-                          : "rotate(180deg)",
-                      }}
-                    >
-                      🔽
-                    </span>
-                  )}
+                  {sort && <span className="ml-1">🔽</span>}
                 </TableHead>
               );
             })}
@@ -238,14 +225,14 @@ const OrdersTable = ({
       <TableBody>
         {loading ? (
           <TableRow>
-            <TableCell colSpan={7} className="text-center py-6">
+            <TableCell colSpan={7} className="text-center py-4">
               Đang tải...
             </TableCell>
           </TableRow>
         ) : data.length === 0 ? (
           <TableRow>
             <TableCell colSpan={7} className="text-center py-6">
-              Không có đơn hàng
+              Không có dữ liệu
             </TableCell>
           </TableRow>
         ) : (
@@ -253,10 +240,7 @@ const OrdersTable = ({
             <TableRow key={row.id}>
               {row.getVisibleCells().map((cell) => (
                 <TableCell key={cell.id}>
-                  {flexRender(
-                    cell.column.columnDef.cell,
-                    cell.getContext()
-                  )}
+                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </TableCell>
               ))}
             </TableRow>
@@ -267,7 +251,7 @@ const OrdersTable = ({
   );
 };
 
-/* ====================== PAGE ===================== */
+// ====================== PAGE =====================
 export default function OrdersPage() {
   const router = useRouter();
 
@@ -291,16 +275,11 @@ export default function OrdersPage() {
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
 
-  /* ================= FETCH ================= */
   const fetchPage = async (
     page: number,
-    keyword = searchValue,
-    field:
-      | "keyword"
-      | "minTotal"
-      | "maxTotal"
-      | "status" = searchField,
-    sortingState: SortingState = sorting
+    keyword = "",
+    field: "keyword" | "minTotal" | "maxTotal" | "status" = "keyword",
+    sortingState: SortingState = []
   ) => {
     setLoading(true);
     try {
@@ -329,7 +308,7 @@ export default function OrdersPage() {
 
       const json = await res.json();
       setData(json.data || []);
-      setPageInfo(json.pageInfo || pageInfo);
+      setPageInfo(json.pageInfo);
       setJumpPage(page);
     } finally {
       setLoading(false);
@@ -368,11 +347,6 @@ export default function OrdersPage() {
     fetchPage(1);
   }, []);
 
-  /* sort đổi → fetch lại */
-  useEffect(() => {
-    fetchPage(1);
-  }, [sorting]);
-
   return (
     <div className="p-6 space-y-4">
       <div className="flex justify-between items-center">
@@ -392,16 +366,7 @@ export default function OrdersPage() {
             <select
               className="border px-2 py-1 rounded"
               value={searchField}
-              onChange={(e) =>
-                setSearchField(
-                  e.target.value as
-                    | "keyword"
-                    | "minTotal"
-                    | "maxTotal"
-                    | "status"
-                    | "time"
-                )
-              }
+              onChange={(e) => setSearchField(e.target.value as any)}
             >
               <option value="keyword">Tên / SDT</option>
               <option value="maxTotal">Max Total</option>
@@ -419,7 +384,9 @@ export default function OrdersPage() {
                 />
                 <button
                   className="px-3 py-1 bg-blue-500 text-white rounded"
-                  onClick={() => fetchPage(1)}
+                  onClick={() =>
+                    fetchPage(1, searchValue, searchField, sorting)
+                  }
                 >
                   Tìm
                 </button>
@@ -447,7 +414,6 @@ export default function OrdersPage() {
               </>
             )}
           </div>
-
           <OrdersTable
             data={data}
             setData={setData}
@@ -459,13 +425,12 @@ export default function OrdersPage() {
           {/* PAGINATION */}
           <div className="flex items-center gap-2 mt-4">
             <button
-              disabled={!pageInfo.hasPrevious || loading}
+              disabled={!pageInfo.hasPrevious}
               className="px-3 py-1 border rounded disabled:opacity-50"
               onClick={() => fetchPage(pageInfo.currentPage - 1)}
             >
               Previous
             </button>
-
             <input
               type="number"
               className="w-14 border px-2 py-1 rounded"
@@ -474,19 +439,15 @@ export default function OrdersPage() {
               value={jumpPage}
               onChange={(e) => setJumpPage(Number(e.target.value))}
             />
-
             <button
-              disabled={loading}
               className="px-3 py-1 border rounded"
               onClick={() => fetchPage(jumpPage)}
             >
               Go
             </button>
-
             <span>/ {pageInfo.totalPage}</span>
-
             <button
-              disabled={!pageInfo.hasNext || loading}
+              disabled={!pageInfo.hasNext}
               className="px-3 py-1 border rounded disabled:opacity-50"
               onClick={() => fetchPage(pageInfo.currentPage + 1)}
             >
