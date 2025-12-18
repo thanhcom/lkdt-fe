@@ -121,7 +121,7 @@ export default function HomePage() {
               <FaPhoneAlt /> <strong>Số điện thoại:</strong> 096.210.0123
             </p>
             <p>
-              <strong>Email:</strong> thanhtrang.electronic@example.com
+              <strong>Email:</strong> danhthanh89@gmail.com
             </p>
 
             <div className="flex justify-center gap-6 mt-4 text-3xl">
