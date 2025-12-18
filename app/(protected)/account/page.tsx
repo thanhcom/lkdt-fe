@@ -107,45 +107,42 @@ export default function AccountPage() {
   /* ================= LOAD ACCOUNTS ================= */
 
   const loadData = useCallback(() => {
-  setLoading(true);
+    setLoading(true);
 
-  const params = new URLSearchParams({
-    page: page.toString(),
-    size: pageSize.toString(),
-  });
+    const params = new URLSearchParams({
+      page: page.toString(),
+      size: pageSize.toString(),
+    });
 
-  if (debouncedKeyword.trim()) {
-    params.append("keyword", debouncedKeyword);
-  }
+    if (debouncedKeyword.trim()) {
+      params.append("keyword", debouncedKeyword);
+    }
 
-  fetch(`https://api-lkdt.thanhcom.site/account/search?${params}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  })
-    .then((r) => r.json())
-    .then((res) => {
-      const data: PageResponse<Account> = res.data;
-      setAccounts(data.content);
-      setTotalPages(data.totalPages);
+    fetch(`https://api-lkdt.thanhcom.site/account/search?${params}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     })
-    .finally(() => setLoading(false));
-}, [page, debouncedKeyword, token]);
+      .then((r) => r.json())
+      .then((res) => {
+        const data: PageResponse<Account> = res.data;
+        setAccounts(data.content);
+        setTotalPages(data.totalPages);
+      })
+      .finally(() => setLoading(false));
+  }, [page, debouncedKeyword, token]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-  loadData();
-}, [loadData]);
-
+    loadData();
+  }, [loadData]);
 
   /* ================= CREATE ================= */
 
   const handleCreate = () => {
     const body = {
       ...form,
-      birthday: form.birthday
-        ? new Date(form.birthday).toISOString()
-        : null,
+      birthday: form.birthday ? new Date(form.birthday).toISOString() : null,
     };
 
     fetch("https://api-lkdt.thanhcom.site/account/create", {
@@ -173,9 +170,7 @@ export default function AccountPage() {
       phone: form.phone || null,
       active: form.active,
       roleNames: form.roleNames,
-      birthday: form.birthday
-        ? new Date(form.birthday).toISOString()
-        : null,
+      birthday: form.birthday ? new Date(form.birthday).toISOString() : null,
     };
 
     if (form.password.trim()) {
@@ -201,15 +196,12 @@ export default function AccountPage() {
   const handleDelete = () => {
     if (!confirmDelete) return;
 
-    fetch(
-      `https://api-lkdt.thanhcom.site/account/delete/${confirmDelete.id}`,
-      {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    ).then(() => {
+    fetch(`https://api-lkdt.thanhcom.site/account/delete/${confirmDelete.id}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }).then(() => {
       setConfirmDelete(null);
       loadData();
     });
@@ -218,15 +210,12 @@ export default function AccountPage() {
   /* ================= TOGGLE ACTIVE ================= */
 
   const toggleActive = (acc: Account) => {
-    fetch(
-      `https://api-lkdt.thanhcom.site/account/toggle-active/${acc.id}`,
-      {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    ).then(loadData);
+    fetch(`https://api-lkdt.thanhcom.site/account/toggle-active/${acc.id}`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }).then(loadData);
   };
 
   /* ================= RENDER ================= */
@@ -277,65 +266,79 @@ export default function AccountPage() {
         </TableHeader>
 
         <TableBody>
-          {accounts.map((acc) => (
-            <TableRow key={acc.id}>
-              <TableCell>{acc.username}</TableCell>
-              <TableCell>{acc.fullname}</TableCell>
-              <TableCell>{acc.email}</TableCell>
-
-              <TableCell>
-                {acc.roles.map((r) => (
-                  <span
-                    key={r.id}
-                    className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded mr-1"
-                  >
-                    {r.name}
-                  </span>
-                ))}
-              </TableCell>
-
-              <TableCell>
-                <Switch
-                  checked={acc.active}
-                  onCheckedChange={() => toggleActive(acc)}
-                />
-              </TableCell>
-
-              <TableCell className="space-x-2">
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => {
-                    setEditing(acc);
-                    setCreating(false);
-                    setForm({
-                      username: acc.username,
-                      password: "",
-                      fullname: acc.fullname ?? "",
-                      email: acc.email ?? "",
-                      phone: acc.phone ?? "",
-                      birthday: acc.birthday
-                        ? acc.birthday.substring(0, 10)
-                        : "",
-                      active: acc.active,
-                      roleNames: acc.roles.map((r) => r.name),
-                    });
-                    setOpen(true);
-                  }}
-                >
-                  Sửa
-                </Button>
-
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  onClick={() => setConfirmDelete(acc)}
-                >
-                  Xoá
-                </Button>
+          {loading ? (
+            <TableRow>
+              <TableCell colSpan={6} className="text-center py-6">
+                Đang tải...
               </TableCell>
             </TableRow>
-          ))}
+          ) : accounts.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={6} className="text-center py-6">
+                Không có dữ liệu
+              </TableCell>
+            </TableRow>
+          ) : (
+            accounts.map((acc) => (
+              <TableRow key={acc.id}>
+                <TableCell>{acc.username}</TableCell>
+                <TableCell>{acc.fullname}</TableCell>
+                <TableCell>{acc.email}</TableCell>
+
+                <TableCell>
+                  {acc.roles.map((r) => (
+                    <span
+                      key={r.id}
+                      className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded mr-1"
+                    >
+                      {r.name}
+                    </span>
+                  ))}
+                </TableCell>
+
+                <TableCell>
+                  <Switch
+                    checked={acc.active}
+                    onCheckedChange={() => toggleActive(acc)}
+                  />
+                </TableCell>
+
+                <TableCell className="space-x-2">
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => {
+                      setEditing(acc);
+                      setCreating(false);
+                      setForm({
+                        username: acc.username,
+                        password: "",
+                        fullname: acc.fullname ?? "",
+                        email: acc.email ?? "",
+                        phone: acc.phone ?? "",
+                        birthday: acc.birthday
+                          ? acc.birthday.substring(0, 10)
+                          : "",
+                        active: acc.active,
+                        roleNames: acc.roles.map((r) => r.name),
+                      });
+                      setOpen(true);
+                    }}
+                  >
+                    Sửa
+                  </Button>
+
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => setConfirmDelete(acc)}
+                  >
+                    Xoá
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))
+          )}
         </TableBody>
       </Table>
 
@@ -353,9 +356,7 @@ export default function AccountPage() {
               disabled={!creating}
               placeholder="Username"
               value={form.username}
-              onChange={(e) =>
-                setForm({ ...form, username: e.target.value })
-              }
+              onChange={(e) => setForm({ ...form, username: e.target.value })}
             />
 
             <Input
@@ -364,50 +365,38 @@ export default function AccountPage() {
                 creating ? "Password *" : "Password (để trống nếu không đổi)"
               }
               value={form.password}
-              onChange={(e) =>
-                setForm({ ...form, password: e.target.value })
-              }
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
             />
 
             <Input
               placeholder="Fullname"
               value={form.fullname}
-              onChange={(e) =>
-                setForm({ ...form, fullname: e.target.value })
-              }
+              onChange={(e) => setForm({ ...form, fullname: e.target.value })}
             />
 
             <Input
               placeholder="Email"
               value={form.email}
-              onChange={(e) =>
-                setForm({ ...form, email: e.target.value })
-              }
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
             />
 
             <Input
               placeholder="Phone"
               value={form.phone}
-              onChange={(e) =>
-                setForm({ ...form, phone: e.target.value })
-              }
+              onChange={(e) => setForm({ ...form, phone: e.target.value })}
             />
 
             {/* ✅ BIRTHDAY */}
             <Input
               type="date"
               value={form.birthday}
-              onChange={(e) =>
-                setForm({ ...form, birthday: e.target.value })
-              }
+              onChange={(e) => setForm({ ...form, birthday: e.target.value })}
             />
 
             <div className="flex items-center gap-2">
               <Switch
                 checked={form.active}
-                onCheckedChange={(v) =>
-                  setForm({ ...form, active: v })
-                }
+                onCheckedChange={(v) => setForm({ ...form, active: v })}
               />
               <span>Active</span>
             </div>
@@ -423,9 +412,7 @@ export default function AccountPage() {
                         ...form,
                         roleNames: checked
                           ? [...form.roleNames, role.name]
-                          : form.roleNames.filter(
-                              (r) => r !== role.name
-                            ),
+                          : form.roleNames.filter((r) => r !== role.name),
                       })
                     }
                   />
@@ -457,9 +444,7 @@ export default function AccountPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Huỷ</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>
-              Xoá
-            </AlertDialogAction>
+            <AlertDialogAction onClick={handleDelete}>Xoá</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

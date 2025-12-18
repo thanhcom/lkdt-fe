@@ -1,7 +1,5 @@
 "use client";
 
-/* eslint-disable react-compiler/react-compiler */
-
 import React, { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
@@ -22,7 +20,7 @@ import {
   SortingState,
 } from "@tanstack/react-table";
 
-// ====================== TYPES =====================
+/* ====================== TYPES ===================== */
 export type Order = {
   id: number;
   customer: {
@@ -51,12 +49,13 @@ type PageInfo = {
   hasPrevious: boolean;
 };
 
-// ====================== TABLE =====================
+/* ====================== TABLE ===================== */
 const OrdersTable = ({
   data,
   setData,
   sorting,
   setSorting,
+  loading,
 }: {
   data: Order[];
   setData: React.Dispatch<React.SetStateAction<Order[]>>;
@@ -64,6 +63,7 @@ const OrdersTable = ({
   setSorting: (
     updater: SortingState | ((old: SortingState) => SortingState)
   ) => void;
+  loading: boolean;
 }) => {
   const router = useRouter();
 
@@ -113,31 +113,24 @@ const OrdersTable = ({
       id: "items",
       header: "Sản phẩm",
       cell: ({ row }) => (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-2">
           {row.original.items.map((i, idx) => (
             <div
               key={idx}
-              className="bg-white border border-gray-200 rounded-lg shadow-sm p-3 text-sm hover:shadow-md transition-shadow"
+              className="border rounded p-2 text-sm bg-white shadow-sm"
             >
-              <div className="mb-1">
-                <span className="font-semibold text-gray-700">
-                  Mã Linh Kiện:
-                </span>{" "}
-                {i.componentId}
-              </div>
-              <div className="mb-1">
-                <span className="font-semibold text-gray-700">
-                  Tên Linh Kiện:
-                </span>{" "}
-                {i.componentName}
-              </div>
-              <div className="mb-1">
-                <span className="font-semibold text-gray-700">Số lượng:</span>{" "}
-                {i.quantity}
+              <div>
+                <b>Mã:</b> {i.componentId}
               </div>
               <div>
-                <span className="font-semibold text-gray-700">Đơn Giá:</span>{" "}
-                {i.price.toLocaleString("vi-VN")}đ
+                <b>Tên:</b> {i.componentName}
+              </div>
+              <div>
+                <b>Số lượng:</b> {i.quantity}
+              </div>
+              <div>
+                <b>Đơn giá:</b>{" "}
+                {i.price.toLocaleString("vi-VN")} đ
               </div>
             </div>
           ))}
@@ -155,12 +148,12 @@ const OrdersTable = ({
           >
             Edit
           </button>
-
           <button
             className="px-2 py-1 bg-red-600 text-white rounded"
             onClick={async () => {
               const id = row.original.id;
               if (!confirm(`Xoá đơn hàng ${id}?`)) return;
+
               try {
                 const res = await fetch(
                   `https://api-lkdt.thanhcom.site/orders/delete/${id}`,
@@ -172,14 +165,14 @@ const OrdersTable = ({
                   }
                 );
                 const json = await res.json();
+
                 if (res.ok) {
-                  alert("Xoá thành công!");
                   setData((prev) => prev.filter((o) => o.id !== id));
+                  alert("Xoá thành công!");
                 } else {
                   alert("Lỗi: " + json.error);
                 }
-              } catch (err: unknown) {
-                console.error(err);
+              } catch {
                 alert("Có lỗi khi xoá đơn hàng!");
               }
             }}
@@ -203,9 +196,9 @@ const OrdersTable = ({
   return (
     <Table>
       <TableHeader>
-        {table.getHeaderGroups().map((headerGroup) => (
-          <TableRow key={headerGroup.id}>
-            {headerGroup.headers.map((header) => {
+        {table.getHeaderGroups().map((hg) => (
+          <TableRow key={hg.id}>
+            {hg.headers.map((header) => {
               const sort = sorting.find((s) => s.id === header.id);
               return (
                 <TableHead
@@ -243,56 +236,78 @@ const OrdersTable = ({
       </TableHeader>
 
       <TableBody>
-        {table.getRowModel().rows.map((row) => (
-          <TableRow key={row.id}>
-            {row.getVisibleCells().map((cell) => (
-              <TableCell key={cell.id}>
-                {flexRender(
-                  cell.column.columnDef.cell,
-                  cell.getContext()
-                )}
-              </TableCell>
-            ))}
+        {loading ? (
+          <TableRow>
+            <TableCell colSpan={7} className="text-center py-6">
+              Đang tải...
+            </TableCell>
           </TableRow>
-        ))}
+        ) : data.length === 0 ? (
+          <TableRow>
+            <TableCell colSpan={7} className="text-center py-6">
+              Không có đơn hàng
+            </TableCell>
+          </TableRow>
+        ) : (
+          table.getRowModel().rows.map((row) => (
+            <TableRow key={row.id}>
+              {row.getVisibleCells().map((cell) => (
+                <TableCell key={cell.id}>
+                  {flexRender(
+                    cell.column.columnDef.cell,
+                    cell.getContext()
+                  )}
+                </TableCell>
+              ))}
+            </TableRow>
+          ))
+        )}
       </TableBody>
     </Table>
   );
 };
 
-// ====================== PAGE =====================
+/* ====================== PAGE ===================== */
 export default function OrdersPage() {
   const router = useRouter();
 
   const [data, setData] = useState<Order[]>([]);
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [loading, setLoading] = useState(false);
+
   const [pageInfo, setPageInfo] = useState<PageInfo>({
     currentPage: 1,
     totalPage: 1,
     hasNext: false,
     hasPrevious: false,
   });
-  const [jumpPage, setJumpPage] = useState<number>(1);
+  const [jumpPage, setJumpPage] = useState(1);
 
   const [searchField, setSearchField] = useState<
     "keyword" | "minTotal" | "maxTotal" | "status" | "time"
   >("keyword");
-  const [searchValue, setSearchValue] = useState<string>("");
+  const [searchValue, setSearchValue] = useState("");
 
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
 
+  /* ================= FETCH ================= */
   const fetchPage = async (
     page: number,
-    keyword = "",
-    field: "keyword" | "minTotal" | "maxTotal" | "status" = "keyword",
-    sortingState: SortingState = []
+    keyword = searchValue,
+    field:
+      | "keyword"
+      | "minTotal"
+      | "maxTotal"
+      | "status" = searchField,
+    sortingState: SortingState = sorting
   ) => {
+    setLoading(true);
     try {
       const apiPage = page - 1;
       let query = `page=${apiPage}&size=20`;
 
-      if (keyword.trim() !== "") {
+      if (keyword.trim()) {
         query += `&${field}=${encodeURIComponent(keyword.trim())}`;
       }
 
@@ -314,24 +329,25 @@ export default function OrdersPage() {
 
       const json = await res.json();
       setData(json.data || []);
-      setPageInfo(json.pageInfo);
+      setPageInfo(json.pageInfo || pageInfo);
       setJumpPage(page);
-    } catch (err: unknown) {
-      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
   const fetchTime = async () => {
     if (!start || !end) return;
 
-    const dateFromISO = new Date(start).toISOString();
-    const dateToISO = new Date(end).toISOString();
-
+    setLoading(true);
     try {
+      const from = new Date(start).toISOString();
+      const to = new Date(end).toISOString();
+
       const res = await fetch(
         `https://api-lkdt.thanhcom.site/orders/search?dateFrom=${encodeURIComponent(
-          dateFromISO
-        )}&dateTo=${encodeURIComponent(dateToISO)}`,
+          from
+        )}&dateTo=${encodeURIComponent(to)}`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -343,14 +359,19 @@ export default function OrdersPage() {
       setData(json.data || []);
       setPageInfo(json.pageInfo || pageInfo);
       setJumpPage(1);
-    } catch (err: unknown) {
-      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchPage(1);
   }, []);
+
+  /* sort đổi → fetch lại */
+  useEffect(() => {
+    fetchPage(1);
+  }, [sorting]);
 
   return (
     <div className="p-6 space-y-4">
@@ -364,7 +385,7 @@ export default function OrdersPage() {
         </button>
       </div>
 
-      <Card className="shadow-lg">
+      <Card>
         <CardContent>
           {/* SEARCH */}
           <div className="mb-4 flex items-center gap-2">
@@ -375,14 +396,14 @@ export default function OrdersPage() {
                 setSearchField(
                   e.target.value as
                     | "keyword"
-                    | "maxTotal"
                     | "minTotal"
+                    | "maxTotal"
                     | "status"
                     | "time"
                 )
               }
             >
-              <option value="keyword">Tên khách hàng / SDT</option>
+              <option value="keyword">Tên / SDT</option>
               <option value="maxTotal">Max Total</option>
               <option value="minTotal">Min Total</option>
               <option value="status">Trạng thái</option>
@@ -398,11 +419,9 @@ export default function OrdersPage() {
                 />
                 <button
                   className="px-3 py-1 bg-blue-500 text-white rounded"
-                  onClick={() =>
-                    fetchPage(1, searchValue, searchField, sorting)
-                  }
+                  onClick={() => fetchPage(1)}
                 >
-                  Tìm kiếm
+                  Tìm
                 </button>
               </>
             ) : (
@@ -423,7 +442,7 @@ export default function OrdersPage() {
                   className="px-3 py-1 bg-blue-500 text-white rounded"
                   onClick={fetchTime}
                 >
-                  Tìm theo thời gian
+                  Tìm
                 </button>
               </>
             )}
@@ -434,17 +453,19 @@ export default function OrdersPage() {
             setData={setData}
             sorting={sorting}
             setSorting={setSorting}
+            loading={loading}
           />
 
           {/* PAGINATION */}
           <div className="flex items-center gap-2 mt-4">
             <button
-              disabled={!pageInfo.hasPrevious}
+              disabled={!pageInfo.hasPrevious || loading}
               className="px-3 py-1 border rounded disabled:opacity-50"
               onClick={() => fetchPage(pageInfo.currentPage - 1)}
             >
               Previous
             </button>
+
             <input
               type="number"
               className="w-14 border px-2 py-1 rounded"
@@ -453,15 +474,19 @@ export default function OrdersPage() {
               value={jumpPage}
               onChange={(e) => setJumpPage(Number(e.target.value))}
             />
+
             <button
+              disabled={loading}
               className="px-3 py-1 border rounded"
               onClick={() => fetchPage(jumpPage)}
             >
               Go
             </button>
+
             <span>/ {pageInfo.totalPage}</span>
+
             <button
-              disabled={!pageInfo.hasNext}
+              disabled={!pageInfo.hasNext || loading}
               className="px-3 py-1 border rounded disabled:opacity-50"
               onClick={() => fetchPage(pageInfo.currentPage + 1)}
             >

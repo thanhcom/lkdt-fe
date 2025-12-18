@@ -4,7 +4,12 @@ import React, { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
 
 import {
@@ -16,7 +21,7 @@ import {
   SortingState,
 } from "@tanstack/react-table";
 
-// ====================== TYPES =====================
+/* ====================== TYPES ===================== */
 export type Supplier = {
   id: number;
   name: string;
@@ -27,17 +32,20 @@ export type Supplier = {
   createdAt: string;
 };
 
-// ====================== TABLE =====================
+/* ====================== TABLE ===================== */
 const SupplierTable = ({
   data,
   sorting,
   setSorting,
+  loading,
 }: {
   data: Supplier[];
   sorting: SortingState;
-  setSorting: (updater: SortingState | ((old: SortingState) => SortingState)) => void;
+  setSorting: (
+    updater: SortingState | ((old: SortingState) => SortingState)
+  ) => void;
+  loading: boolean;
 }) => {
-
   const router = useRouter();
 
   const columns: ColumnDef<Supplier>[] = [
@@ -73,7 +81,9 @@ const SupplierTable = ({
                 `https://api-lkdt.thanhcom.site/supplier/delete/${id}`,
                 {
                   method: "DELETE",
-                  headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+                  headers: {
+                    Authorization: `Bearer ${localStorage.getItem("token")}`,
+                  },
                 }
               );
 
@@ -120,9 +130,19 @@ const SupplierTable = ({
                     setSorting([{ id: header.id, desc: newDesc }]);
                   }}
                 >
-                  {flexRender(header.column.columnDef.header, header.getContext())}
+                  {flexRender(
+                    header.column.columnDef.header,
+                    header.getContext()
+                  )}
                   {sort && (
-                    <span className="ml-1 inline-block" style={{ transform: sort.desc ? "rotate(0deg)" : "rotate(180deg)" }}>
+                    <span
+                      className="ml-1 inline-block"
+                      style={{
+                        transform: sort.desc
+                          ? "rotate(0deg)"
+                          : "rotate(180deg)",
+                      }}
+                    >
                       🔽
                     </span>
                   )}
@@ -134,26 +154,45 @@ const SupplierTable = ({
       </TableHeader>
 
       <TableBody>
-        {table.getRowModel().rows.map((row) => (
-          <TableRow key={row.id}>
-            {row.getVisibleCells().map((cell) => (
-              <TableCell key={cell.id}>
-                {flexRender(cell.column.columnDef.cell, cell.getContext())}
-              </TableCell>
-            ))}
+        {loading ? (
+          <TableRow>
+            <TableCell colSpan={7} className="text-center py-6">
+              Đang tải...
+            </TableCell>
           </TableRow>
-        ))}
+        ) : data.length === 0 ? (
+          <TableRow>
+            <TableCell colSpan={7} className="text-center py-6">
+              Không có dữ liệu
+            </TableCell>
+          </TableRow>
+        ) : (
+          table.getRowModel().rows.map((row) => (
+            <TableRow key={row.id}>
+              {row.getVisibleCells().map((cell) => (
+                <TableCell key={cell.id}>
+                  {flexRender(
+                    cell.column.columnDef.cell,
+                    cell.getContext()
+                  )}
+                </TableCell>
+              ))}
+            </TableRow>
+          ))
+        )}
       </TableBody>
     </Table>
   );
 };
 
-// ====================== PAGE =====================
+/* ====================== PAGE ===================== */
 export default function SupplierPage() {
   const router = useRouter();
 
   const [data, setData] = useState<Supplier[]>([]);
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [loading, setLoading] = useState(false);
+
   const [pageInfo, setPageInfo] = useState<any>({
     currentPage: 1,
     totalPage: 1,
@@ -163,30 +202,38 @@ export default function SupplierPage() {
   const [jumpPage, setJumpPage] = useState(1);
   const [keyword, setKeyword] = useState("");
 
-  // ================= FETCH =================
+  /* ================= FETCH ================= */
   const fetchPage = async (page: number, keywordValue = keyword) => {
-    const apiPage = page - 1;
+    setLoading(true);
+    try {
+      const apiPage = page - 1;
+      let query = `page=${apiPage}&size=20`;
 
-    let query = `page=${apiPage}&size=20`;
+      if (keywordValue.trim() !== "") {
+        query += `&keyword=${encodeURIComponent(keywordValue.trim())}`;
+      }
 
-    if (keywordValue.trim() !== "") {
-      query += `&keyword=${encodeURIComponent(keywordValue.trim())}`;
+      const res = await fetch(
+        `https://api-lkdt.thanhcom.site/supplier/search?${query}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+
+      const json = await res.json();
+
+      setData(json.data || []);
+      setPageInfo(json.pageInfo || {});
+      setJumpPage(page);
+    } finally {
+      setLoading(false);
     }
-
-    const res = await fetch(
-      `https://api-lkdt.thanhcom.site/supplier/search?${query}`,
-      { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
-    );
-
-    const json = await res.json();
-
-    setData(json.data || []);
-    setPageInfo(json.pageInfo || {});
-    setJumpPage(page);
   };
 
   useEffect(() => {
-    fetchPage(1); // fetch only → ESLint KHÔNG PHÀN NÀN
+    fetchPage(1);
   }, []);
 
   return (
@@ -203,7 +250,7 @@ export default function SupplierPage() {
 
       <Card className="shadow-md">
         <CardContent>
-          {/* SEARCH BAR */}
+          {/* SEARCH */}
           <div className="flex items-center gap-2 mb-4">
             <input
               className="border px-2 py-1 rounded w-full"
@@ -223,12 +270,13 @@ export default function SupplierPage() {
             data={data}
             sorting={sorting}
             setSorting={setSorting}
+            loading={loading}
           />
 
           {/* PAGINATION */}
           <div className="flex items-center gap-2 mt-4">
             <button
-              disabled={!pageInfo.hasPrevious}
+              disabled={!pageInfo.hasPrevious || loading}
               className="px-3 py-1 border rounded disabled:opacity-50"
               onClick={() => fetchPage(pageInfo.currentPage - 1)}
             >
@@ -245,14 +293,18 @@ export default function SupplierPage() {
               onChange={(e) => setJumpPage(Number(e.target.value))}
             />
 
-            <button className="px-3 py-1 border rounded" onClick={() => fetchPage(jumpPage)}>
+            <button
+              className="px-3 py-1 border rounded"
+              onClick={() => fetchPage(jumpPage)}
+              disabled={loading}
+            >
               Go
             </button>
 
             <span>/ {pageInfo.totalPage}</span>
 
             <button
-              disabled={!pageInfo.hasNext}
+              disabled={!pageInfo.hasNext || loading}
               className="px-3 py-1 border rounded disabled:opacity-50"
               onClick={() => fetchPage(pageInfo.currentPage + 1)}
             >
