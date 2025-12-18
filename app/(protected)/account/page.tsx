@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import {
   Table,
@@ -41,9 +41,11 @@ interface PageResponse<T> {
   number: number;
 }
 
-/* ================= CONSTANT ================= */
-
-const ROLE_OPTIONS = ["ADMIN", "CUSTOMER"];
+interface Role {
+  id: number;
+  name: string;
+  description: string;
+}
 
 /* ================= COMPONENT ================= */
 
@@ -52,6 +54,7 @@ export default function AccountPage() {
     typeof window !== "undefined" ? localStorage.getItem("token") : "";
 
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(false);
 
   const [keyword, setKeyword] = useState("");
@@ -64,14 +67,16 @@ export default function AccountPage() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Account | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<Account | null>(null);
+  const [creating, setCreating] = useState(false);
 
-  /* ======= FORM (MATCH UserRequest) ======= */
+  /* ======= FORM ======= */
   const [form, setForm] = useState({
     username: "",
     password: "",
     fullname: "",
     email: "",
     phone: "",
+    birthday: "", // ✅ thêm birthday (yyyy-MM-dd)
     active: true,
     roleNames: [] as string[],
   });
@@ -83,39 +88,81 @@ export default function AccountPage() {
     return () => clearTimeout(t);
   }, [keyword]);
 
-  /* ================= LOAD DATA ================= */
+  /* ================= LOAD ROLES ================= */
 
-  const loadData = () => {
-    setLoading(true);
-
-    const params = new URLSearchParams({
-      page: page.toString(),
-      size: pageSize.toString(),
-    });
-
-    if (debouncedKeyword.trim()) {
-      params.append("keyword", debouncedKeyword);
-    }
-
-    fetch(`https://api-lkdt.thanhcom.site/account/search?${params}`, {
+  const loadRoles = () => {
+    fetch("https://api-lkdt.thanhcom.site/role/all", {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     })
       .then((r) => r.json())
-      .then((res) => {
-        const data: PageResponse<Account> = res.data;
-        setAccounts(data.content);
-        setTotalPages(data.totalPages);
-      })
-      .finally(() => setLoading(false));
+      .then((res) => setRoles(res.data || []));
   };
 
   useEffect(() => {
-    loadData();
-  }, [page, debouncedKeyword]);
+    loadRoles();
+  }, []);
 
-  /* ================= SAVE (UPDATE) ================= */
+  /* ================= LOAD ACCOUNTS ================= */
+
+  const loadData = useCallback(() => {
+  setLoading(true);
+
+  const params = new URLSearchParams({
+    page: page.toString(),
+    size: pageSize.toString(),
+  });
+
+  if (debouncedKeyword.trim()) {
+    params.append("keyword", debouncedKeyword);
+  }
+
+  fetch(`https://api-lkdt.thanhcom.site/account/search?${params}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+    .then((r) => r.json())
+    .then((res) => {
+      const data: PageResponse<Account> = res.data;
+      setAccounts(data.content);
+      setTotalPages(data.totalPages);
+    })
+    .finally(() => setLoading(false));
+}, [page, debouncedKeyword, token]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+  loadData();
+}, [loadData]);
+
+
+  /* ================= CREATE ================= */
+
+  const handleCreate = () => {
+    const body = {
+      ...form,
+      birthday: form.birthday
+        ? new Date(form.birthday).toISOString()
+        : null,
+    };
+
+    fetch("https://api-lkdt.thanhcom.site/account/create", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(body),
+    }).then(() => {
+      setOpen(false);
+      setCreating(false);
+      loadData();
+    });
+  };
+
+  /* ================= UPDATE ================= */
 
   const handleSave = () => {
     if (!editing) return;
@@ -126,6 +173,9 @@ export default function AccountPage() {
       phone: form.phone || null,
       active: form.active,
       roleNames: form.roleNames,
+      birthday: form.birthday
+        ? new Date(form.birthday).toISOString()
+        : null,
     };
 
     if (form.password.trim()) {
@@ -151,12 +201,15 @@ export default function AccountPage() {
   const handleDelete = () => {
     if (!confirmDelete) return;
 
-    fetch(`https://api-lkdt.thanhcom.site/account/delete/${confirmDelete.id}`, {
-      method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }).then(() => {
+    fetch(
+      `https://api-lkdt.thanhcom.site/account/delete/${confirmDelete.id}`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    ).then(() => {
       setConfirmDelete(null);
       loadData();
     });
@@ -165,12 +218,15 @@ export default function AccountPage() {
   /* ================= TOGGLE ACTIVE ================= */
 
   const toggleActive = (acc: Account) => {
-    fetch(`https://api-lkdt.thanhcom.site/account/toggle-active/${acc}`, {
-      method: "PUT",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }).then(loadData);
+    fetch(
+      `https://api-lkdt.thanhcom.site/account/toggle-active/${acc.id}`,
+      {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    ).then(loadData);
   };
 
   /* ================= RENDER ================= */
@@ -179,9 +235,28 @@ export default function AccountPage() {
     <Card className="p-6 mt-4">
       <div className="flex justify-between mb-4">
         <h1 className="text-2xl font-semibold">Quản lý tài khoản</h1>
+
+        <Button
+          onClick={() => {
+            setCreating(true);
+            setEditing(null);
+            setForm({
+              username: "",
+              password: "",
+              fullname: "",
+              email: "",
+              phone: "",
+              birthday: "",
+              active: true,
+              roleNames: [],
+            });
+            setOpen(true);
+          }}
+        >
+          + Tạo mới
+        </Button>
       </div>
 
-      {/* SEARCH */}
       <Input
         placeholder="Tìm theo username / email..."
         value={keyword}
@@ -189,7 +264,6 @@ export default function AccountPage() {
         className="w-80 mb-4"
       />
 
-      {/* TABLE */}
       <Table>
         <TableHeader>
           <TableRow>
@@ -233,12 +307,16 @@ export default function AccountPage() {
                   variant="secondary"
                   onClick={() => {
                     setEditing(acc);
+                    setCreating(false);
                     setForm({
                       username: acc.username,
                       password: "",
                       fullname: acc.fullname ?? "",
                       email: acc.email ?? "",
                       phone: acc.phone ?? "",
+                      birthday: acc.birthday
+                        ? acc.birthday.substring(0, 10)
+                        : "",
                       active: acc.active,
                       roleNames: acc.roles.map((r) => r.name),
                     });
@@ -261,95 +339,111 @@ export default function AccountPage() {
         </TableBody>
       </Table>
 
-      {/* PAGINATION */}
-      <div className="flex justify-between mt-4">
-        <Button disabled={page === 0} onClick={() => setPage(page - 1)}>
-          ← Trước
-        </Button>
-        <span>
-          Trang {page + 1} / {totalPages}
-        </span>
-        <Button
-          disabled={page + 1 >= totalPages}
-          onClick={() => setPage(page + 1)}
-        >
-          Sau →
-        </Button>
-      </div>
-
-      {/* EDIT DIALOG */}
+      {/* CREATE / EDIT */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Sửa tài khoản</DialogTitle>
+            <DialogTitle>
+              {creating ? "Tạo tài khoản" : "Sửa tài khoản"}
+            </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-3">
-            <Input disabled value={form.username} />
+            <Input
+              disabled={!creating}
+              placeholder="Username"
+              value={form.username}
+              onChange={(e) =>
+                setForm({ ...form, username: e.target.value })
+              }
+            />
 
             <Input
               type="password"
-              placeholder="Password (để trống nếu không đổi)"
+              placeholder={
+                creating ? "Password *" : "Password (để trống nếu không đổi)"
+              }
               value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              onChange={(e) =>
+                setForm({ ...form, password: e.target.value })
+              }
             />
 
             <Input
               placeholder="Fullname"
               value={form.fullname}
-              onChange={(e) => setForm({ ...form, fullname: e.target.value })}
+              onChange={(e) =>
+                setForm({ ...form, fullname: e.target.value })
+              }
             />
 
             <Input
               placeholder="Email"
               value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              onChange={(e) =>
+                setForm({ ...form, email: e.target.value })
+              }
             />
 
             <Input
               placeholder="Phone"
               value={form.phone}
-              onChange={(e) => setForm({ ...form, phone: e.target.value })}
+              onChange={(e) =>
+                setForm({ ...form, phone: e.target.value })
+              }
             />
 
-            {/* ACTIVE */}
+            {/* ✅ BIRTHDAY */}
+            <Input
+              type="date"
+              value={form.birthday}
+              onChange={(e) =>
+                setForm({ ...form, birthday: e.target.value })
+              }
+            />
+
             <div className="flex items-center gap-2">
               <Switch
                 checked={form.active}
-                onCheckedChange={(v) => setForm({ ...form, active: v })}
+                onCheckedChange={(v) =>
+                  setForm({ ...form, active: v })
+                }
               />
               <span>Active</span>
             </div>
 
-            {/* ROLES */}
             <div className="space-y-2">
               <p className="text-sm font-medium">Roles</p>
-              {ROLE_OPTIONS.map((role) => (
-                <div key={role} className="flex items-center gap-2">
+              {roles.map((role) => (
+                <div key={role.id} className="flex items-center gap-2">
                   <Checkbox
-                    checked={form.roleNames.includes(role)}
-                    onCheckedChange={(checked) => {
+                    checked={form.roleNames.includes(role.name)}
+                    onCheckedChange={(checked) =>
                       setForm({
                         ...form,
                         roleNames: checked
-                          ? [...form.roleNames, role]
-                          : form.roleNames.filter((r) => r !== role),
-                      });
-                    }}
+                          ? [...form.roleNames, role.name]
+                          : form.roleNames.filter(
+                              (r) => r !== role.name
+                            ),
+                      })
+                    }
                   />
-                  <span>{role}</span>
+                  <span>{role.name}</span>
                 </div>
               ))}
             </div>
           </div>
 
           <DialogFooter>
-            <Button onClick={handleSave}>Lưu</Button>
+            <Button onClick={creating ? handleCreate : handleSave}>
+              {creating ? "Tạo mới" : "Lưu"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* CONFIRM DELETE */}
+      {/* DELETE */}
       <AlertDialog
         open={!!confirmDelete}
         onOpenChange={() => setConfirmDelete(null)}
@@ -363,7 +457,9 @@ export default function AccountPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Huỷ</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Xoá</AlertDialogAction>
+            <AlertDialogAction onClick={handleDelete}>
+              Xoá
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
