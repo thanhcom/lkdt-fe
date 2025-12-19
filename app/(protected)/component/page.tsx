@@ -122,9 +122,7 @@ export default function Page() {
         accessorKey: "stockQuantity",
         header: "Stock Qty",
         cell: ({ row }) => (
-          <div className="text-right">
-            {row.getValue<number>("stockQuantity")}
-          </div>
+          <div className="text-right">{row.getValue<number>("stockQuantity")}</div>
         ),
       },
       { accessorKey: "location", header: "Location" },
@@ -197,11 +195,8 @@ export default function Page() {
   // TABLE STATE
   // ==========================
   const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    []
-  );
-  const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({});
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
+  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
 
   const table = useReactTable({
@@ -224,51 +219,53 @@ export default function Page() {
   });
 
   // ==========================
-  // FETCH DATA
+  // FETCH DATA (chỉ khi bấm nút)
   // ==========================
-  const fetchData = React.useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  const fetchData = React.useCallback(
+    async (searchFilters: typeof filters) => {
+      setLoading(true);
+      setError(null);
 
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) throw new Error("No token");
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) throw new Error("No token");
 
-      const params = new URLSearchParams({
-        page: String(currentPage - 1),
-        size: "20",
-      });
+        const params = new URLSearchParams({
+          page: String(currentPage - 1),
+          size: "20",
+        });
 
-      if (filters.keyword) params.append("keyword", filters.keyword);
-      if (filters.id) params.append("id", filters.id);
-      if (filters.stockQuantity)
-        params.append("stockQuantity", filters.stockQuantity);
+        if (searchFilters.keyword) params.append("keyword", searchFilters.keyword);
+        if (searchFilters.id) params.append("id", searchFilters.id);
+        if (searchFilters.stockQuantity)
+          params.append("stockQuantity", searchFilters.stockQuantity);
 
-      const res = await fetch(
-        `https://api-lkdt.thanhcom.site/components/search?${params}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+        const res = await fetch(
+          `https://api-lkdt.thanhcom.site/components/search?${params}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
 
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-      const json = await res.json();
-      setData(json.data ?? []);
-      setTotalPages(json.pageInfo?.totalPage ?? 1);
-      setTotalElement(json.pageInfo?.totalElement ?? 0);
-    } catch (e: unknown) {
-      if (e instanceof Error) {
-        setError(e.message);
-      } else {
-        setError("Unknown error");
+        const json = await res.json();
+        setData(json.data ?? []);
+        setTotalPages(json.pageInfo?.totalPage ?? 1);
+        setTotalElement(json.pageInfo?.totalElement ?? 0);
+      } catch (e: unknown) {
+        if (e instanceof Error) setError(e.message);
+        else setError("Unknown error");
+      } finally {
+        setLoading(false);
       }
-    } finally {
-      setLoading(false);
-    }
-  }, [currentPage, filters]);
+    },
+    [currentPage]
+  );
 
+  // Chỉ fetch khi đổi page, dùng filters hiện tại
   React.useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    fetchData(filters);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage]); // filters không gây re-fetch
 
   if (loading) return <Loading />;
   if (error) return <div className="p-8 text-red-500">{error}</div>;
@@ -304,7 +301,7 @@ export default function Page() {
         <Button
           onClick={() => {
             setCurrentPage(1);
-            fetchData();
+            fetchData(filters);
           }}
         >
           🔍 Tìm Kiếm
@@ -313,9 +310,10 @@ export default function Page() {
         <Button
           variant="outline"
           onClick={() => {
-            setFilters({ keyword: "", id: "", stockQuantity: "" });
+            const emptyFilters = { keyword: "", id: "", stockQuantity: "" };
+            setFilters(emptyFilters);
             setCurrentPage(1);
-            fetchData();
+            fetchData(emptyFilters);
           }}
         >
           Xóa Bộ Lọc
@@ -376,20 +374,14 @@ export default function Page() {
                 <TableRow key={row.id}>
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
-                >
+                <TableCell colSpan={columns.length} className="h-24 text-center">
                   No results
                 </TableCell>
               </TableRow>
