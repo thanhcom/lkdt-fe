@@ -6,6 +6,7 @@ import { useSidebar } from "@/hooks/use-sidebar";
 import { useStore } from "@/hooks/use-store";
 import { cn } from "@/lib/utils";
 import { PanelsTopLeft } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 
 export function Sidebar() {
@@ -35,17 +36,23 @@ export function Sidebar() {
           asChild
         >
           <Link href="/" className="flex items-center gap-2">
-            <PanelsTopLeft className="w-6 h-6 mr-1" />
-            <h1
+            {/* LOGO */}
+            <div
               className={cn(
-                "font-bold text-lg whitespace-nowrap transition-[transform,opacity,display] ease-in-out duration-300",
+                "transition-[transform,opacity,display] ease-in-out duration-300",
                 !getOpenState()
                   ? "-translate-x-96 opacity-0 hidden"
                   : "translate-x-0 opacity-100"
               )}
             >
-              Thành Trang Electronic
-            </h1>
+              <Image
+                src="/images/logo1.png"
+                alt="Thành Trang Electronic"
+                width={160}
+                height={42}
+                priority
+              />
+            </div>
           </Link>
         </Button>
         <Menu isOpen={getOpenState()} />

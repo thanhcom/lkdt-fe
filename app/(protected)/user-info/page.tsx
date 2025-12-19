@@ -64,16 +64,9 @@ export default function UserInfoPage() {
 
   return (
     <div className="p-6 max-w-3xl mx-auto space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Thông tin tài khoản</h1>
-        <Button variant="outline" onClick={() => router.back()}>
-          ⬅ Quay lại
-        </Button>
-      </div>
-
-      <Card>
+        <Card>
         <CardHeader>
-          <CardTitle>Thông tin cá nhân</CardTitle>
+          <CardTitle className="text-xl font-semibold text-center">Thông tin cá nhân</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <p><strong>Họ tên:</strong> {user.fullname}</p>
