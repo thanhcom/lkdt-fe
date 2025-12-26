@@ -325,6 +325,13 @@ export default function Page() {
         >
           Thêm Linh Kiện
         </Button>
+
+        <Button
+          variant="outline"
+          onClick={() => router.push("/import")}
+        >
+          Nhập Kho
+        </Button>
       </div>
 
       {/* COLUMN TOGGLE */}
