@@ -1,50 +1,54 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import axios from "axios";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import { Account } from "@/types/AccountType";
+import { Role } from "@/types/dataUser";
 
 export default function UserInfoPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<Account | null>(null);
 
   const getToken = () => {
     if (typeof window === "undefined") return "";
     return localStorage.getItem("token") || "";
   };
 
-  const fetchUserInfo = async () => {
-    try {
-      const token = getToken();
-      if (!token) {
-        console.error("Không có token!");
-        setUser(null);
-        setLoading(false);
-        return;
-      }
+  const fetchUserInfo = useCallback(async () => {
+  try {
+    const token = getToken();
 
-      const res = await axios.get(
-        "https://api-lkdt.thanhcom.site/account/my-info",
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      setUser(res.data.data);
-    } catch (error) {
-      console.error("Lỗi API:", error);
+    if (!token) {
+      console.error("Không có token!");
       setUser(null);
-    } finally {
-      setLoading(false);
+      return;
     }
-  };
+
+    const res = await axios.get(
+      "https://api-lkdt.thanhcom.site/account/my-info",
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    setUser(res.data.data);
+  } catch (error) {
+    console.error("Lỗi API:", error);
+    setUser(null);
+  } finally {
+    setLoading(false);
+  }
+}, []); // 👈 deps rỗng là OK
 
   useEffect(() => {
-    fetchUserInfo();
-  }, []);
+  fetchUserInfo();
+}, [fetchUserInfo]);
 
   if (loading)
   return (
@@ -92,7 +96,7 @@ export default function UserInfoPage() {
           <CardTitle>Vai trò & Quyền hạn</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {user.roles.map((role: any) => (
+          {user.roles.map((role: Role) => (
             <div key={role.id} className="border p-3 rounded-md">
               <p className="font-semibold text-lg">Role : {role.name}</p>
               <p className="text-sm text-gray-600">{role.description}</p>
@@ -100,7 +104,7 @@ export default function UserInfoPage() {
               <div className="mt-2">
                 <p className="font-medium">Permissions:</p>
                 <ul className="list-disc pl-5 text-sm mt-1">
-                  {role.permissions.map((p: any) => (
+                  {role.permissions.map((p) => (
                     <li key={p.id}>
                       <strong>{p.name}</strong> – {p.description}
                     </li>
