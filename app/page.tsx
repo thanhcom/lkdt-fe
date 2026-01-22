@@ -126,13 +126,13 @@ export default function HomePage() {
 
             <div className="flex justify-center gap-6 mt-4 text-3xl">
               <a
-                href="#"
+                href="https://www.facebook.com/mit.to.tho.2025"
                 className="hover:text-blue-600 transition transform hover:scale-110"
               >
                 <FaFacebookF />
               </a>
               <a
-                href="#"
+                href="#https://zalo.me/0962100123"
                 className="hover:text-blue-500 transition transform hover:scale-110"
               >
                 <SiZalo />
