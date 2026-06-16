@@ -126,7 +126,7 @@ const TransactionTable = ({
 
               try {
                 const res = await fetch(
-                  `https://api-lkdt.thanhcom.site/transaction/delete/${id}`,
+                  `https://api-lkdt.thanhtrang.online/transaction/delete/${id}`,
                   {
                     method: "DELETE",
                     headers: {
@@ -249,7 +249,7 @@ export default function TransactionPage() {
   ) => {
     try {
       const res = await fetch(
-        `https://api-lkdt.thanhcom.site/transaction/search?${field}=${keyword}&sort=id`,
+        `https://api-lkdt.thanhtrang.online/transaction/search?${field}=${keyword}&sort=id`,
         {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         }
@@ -278,7 +278,7 @@ export default function TransactionPage() {
       const endISO = new Date(end).toISOString();
 
       const res = await fetch(
-        `https://api-lkdt.thanhcom.site/transaction/search?start=${encodeURIComponent(
+        `https://api-lkdt.thanhtrang.online/transaction/search?start=${encodeURIComponent(
           startISO
         )}&end=${encodeURIComponent(endISO)}`,
         {

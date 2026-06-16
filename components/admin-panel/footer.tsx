@@ -7,12 +7,12 @@ export function Footer() {
         <p className="text-xs md:text-sm leading-loose text-muted-foreground text-left">
           Thành Trang Electronic{" "}
           <Link
-            href="https://thanhcom.site/"
+            href="https://thanhtrang.online/"
             target="_blank"
             rel="noopener noreferrer"
             className="font-medium underline underline-offset-4"
           >
-            thanhcom.site
+            thanhtrang.online
           </Link>
           . All rights reserved.
         </p>

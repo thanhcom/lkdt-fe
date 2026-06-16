@@ -29,7 +29,7 @@ export default function UserInfoPage() {
     }
 
     const res = await axios.get(
-      "https://api-lkdt.thanhcom.site/account/my-info",
+      "https://api-lkdt.thanhtrang.online/account/my-info",
       {
         headers: {
           Authorization: `Bearer ${token}`,

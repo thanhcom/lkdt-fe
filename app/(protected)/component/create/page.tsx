@@ -40,7 +40,7 @@ export default function AddComponentForm() {
         return;
       }
       const res = await fetch(
-        "https://api-lkdt.thanhcom.site/components/create",
+        "https://api-lkdt.thanhtrang.online/components/create",
         {
           method: "POST",
           headers: {

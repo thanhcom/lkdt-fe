@@ -28,7 +28,7 @@ export default function ResetPasswordForm() {
 
     try {
       const res = await fetch(
-        "https://api-lkdt.thanhcom.site/account/reset-password",
+        "https://api-lkdt.thanhtrang.online/account/reset-password",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

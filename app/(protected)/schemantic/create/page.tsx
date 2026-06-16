@@ -59,7 +59,7 @@ export default function AddSchematicPage() {
       form.schematicImages.forEach((file) => data.append("schematicImages", file));
 
       await axios.post(
-        `https://api-lkdt.thanhcom.site/schematic/create?componentid=${componentid}`,
+        `https://api-lkdt.thanhtrang.online/schematic/create?componentid=${componentid}`,
         data,
         {
           headers: {

@@ -40,7 +40,7 @@ export default function EditOrderPage() {
     const fetchOrder = async () => {
       try {
         const res = await fetch(
-          `https://api-lkdt.thanhcom.site/orders/${id}`,
+          `https://api-lkdt.thanhtrang.online/orders/${id}`,
           {
             headers: { Authorization: `Bearer ${TOKEN}` },
           }
@@ -83,7 +83,7 @@ export default function EditOrderPage() {
     const timer = setTimeout(async () => {
       try {
         const res = await fetch(
-          `https://api-lkdt.thanhcom.site/components/search?q=${encodeURIComponent(
+          `https://api-lkdt.thanhtrang.online/components/search?q=${encodeURIComponent(
             searchTerm
           )}`,
           {
@@ -184,7 +184,7 @@ export default function EditOrderPage() {
     setSaving(true);
     try {
       const res = await fetch(
-        `https://api-lkdt.thanhcom.site/orders/update/${id}`,
+        `https://api-lkdt.thanhtrang.online/orders/update/${id}`,
         {
           method: "PUT",
           headers: {

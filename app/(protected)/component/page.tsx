@@ -243,7 +243,7 @@ export default function Page() {
           params.append("stockQuantity", searchFilters.stockQuantity);
 
         const res = await fetch(
-          `https://api-lkdt.thanhcom.site/components/search?${params}`,
+          `https://api-lkdt.thanhtrang.online/components/search?${params}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 

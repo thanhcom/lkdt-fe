@@ -19,7 +19,7 @@ export default function AddCustomerPage() {
 
     try {
       const res = await fetch(
-        "https://api-lkdt.thanhcom.site/customer/create",
+        "https://api-lkdt.thanhtrang.online/customer/create",
         {
           method: "POST",
           headers: {

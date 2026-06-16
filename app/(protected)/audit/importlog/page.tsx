@@ -67,7 +67,7 @@ export default function ImportLogPage() {
 
     try {
       const res = await fetch(
-        `https://api-lkdt.thanhcom.site/component-supplier/search?${buildQuery()}`,
+        `https://api-lkdt.thanhtrang.online/component-supplier/search?${buildQuery()}`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,

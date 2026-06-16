@@ -26,7 +26,7 @@ export default function DeleteComponentPage() {
       }
 
       try {
-        const res = await fetch(`https://api-lkdt.thanhcom.site/components/${id}`, {
+        const res = await fetch(`https://api-lkdt.thanhtrang.online/components/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) throw new Error("Không lấy được dữ liệu linh kiện");
@@ -55,7 +55,7 @@ export default function DeleteComponentPage() {
     setDeleting(true);
 
     try {
-      const res = await fetch(`https://api-lkdt.thanhcom.site/components/delete/${id}`, {
+      const res = await fetch(`https://api-lkdt.thanhtrang.online/components/delete/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });

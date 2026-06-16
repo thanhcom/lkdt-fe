@@ -28,7 +28,7 @@ export default function AddTransaction() {
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        const res = await fetch("https://api-lkdt.thanhcom.site/project/all", {
+        const res = await fetch("https://api-lkdt.thanhtrang.online/project/all", {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
         const json = await res.json();
@@ -58,7 +58,7 @@ export default function AddTransaction() {
     };
 
     try {
-      const res = await fetch("https://api-lkdt.thanhcom.site/transaction/create", {
+      const res = await fetch("https://api-lkdt.thanhtrang.online/transaction/create", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

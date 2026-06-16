@@ -64,7 +64,7 @@ const CustomerTable = ({
 
               try {
                 const res = await fetch(
-                  `https://api-lkdt.thanhcom.site/customer/${id}`,
+                  `https://api-lkdt.thanhtrang.online/customer/${id}`,
                   {
                     method: "DELETE",
                     headers: {
@@ -213,7 +213,7 @@ export default function CustomerPage() {
       }
 
       const res = await fetch(
-        `https://api-lkdt.thanhcom.site/customer/search?${query}`,
+        `https://api-lkdt.thanhtrang.online/customer/search?${query}`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,

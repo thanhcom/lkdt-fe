@@ -74,7 +74,7 @@ export default function CreateOrderPage() {
     const timer = setTimeout(async () => {
       try {
         const res = await fetch(
-          `https://api-lkdt.thanhcom.site/customer/search?keyword=${encodeURIComponent(
+          `https://api-lkdt.thanhtrang.online/customer/search?keyword=${encodeURIComponent(
             customerKeyword
           )}`,
           { headers: { Authorization: `Bearer ${token}` } }
@@ -107,7 +107,7 @@ export default function CreateOrderPage() {
     const timer = setTimeout(async () => {
       try {
         const res = await fetch(
-          `https://api-lkdt.thanhcom.site/components/search?keyword=${encodeURIComponent(
+          `https://api-lkdt.thanhtrang.online/components/search?keyword=${encodeURIComponent(
             componentKeyword
           )}`,
           { headers: { Authorization: `Bearer ${token}` } }
@@ -171,7 +171,7 @@ export default function CreateOrderPage() {
 
     try {
       const res = await fetch(
-        "https://api-lkdt.thanhcom.site/orders/create",
+        "https://api-lkdt.thanhtrang.online/orders/create",
         {
           method: "POST",
           headers: {

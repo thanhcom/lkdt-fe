@@ -56,7 +56,7 @@ export default function OrderHistoryPage() {
 
     try {
       const res = await fetch(
-        `https://api-lkdt.thanhcom.site/order-history/search?${buildQuery()}`,
+        `https://api-lkdt.thanhtrang.online/order-history/search?${buildQuery()}`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,

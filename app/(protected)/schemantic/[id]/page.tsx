@@ -33,7 +33,7 @@ export default function ComponentSchematicsPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch(`https://api-lkdt.thanhcom.site/schematic/component/${componentId}`, {
+        const res = await fetch(`https://api-lkdt.thanhtrang.online/schematic/component/${componentId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -78,7 +78,7 @@ export default function ComponentSchematicsPage() {
     if (!confirm("Bạn có chắc muốn xóa Schematic này?")) return;
 
     try {
-      await axios.delete(`https://api-lkdt.thanhcom.site/schematic/${schematicId}`, {
+      await axios.delete(`https://api-lkdt.thanhtrang.online/schematic/${schematicId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

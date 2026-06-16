@@ -53,7 +53,7 @@ export default function EditComponentPage() {
 
       try {
         const res = await fetch(
-          `https://api-lkdt.thanhcom.site/components/${id}`,
+          `https://api-lkdt.thanhtrang.online/components/${id}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -109,7 +109,7 @@ export default function EditComponentPage() {
 
     try {
       const res = await fetch(
-        `https://api-lkdt.thanhcom.site/components/edit/${id}`,
+        `https://api-lkdt.thanhtrang.online/components/edit/${id}`,
         {
           method: "PUT", // hoặc PUT nếu backend hỗ trợ
           headers: {

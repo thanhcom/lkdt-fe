@@ -91,7 +91,7 @@ export default function AccountPage() {
   /* ================= LOAD ROLES ================= */
 
   const loadRoles = () => {
-    fetch("https://api-lkdt.thanhcom.site/role/all", {
+    fetch("https://api-lkdt.thanhtrang.online/role/all", {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -118,7 +118,7 @@ export default function AccountPage() {
       params.append("keyword", debouncedKeyword);
     }
 
-    fetch(`https://api-lkdt.thanhcom.site/account/search?${params}`, {
+    fetch(`https://api-lkdt.thanhtrang.online/account/search?${params}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -145,7 +145,7 @@ export default function AccountPage() {
       birthday: form.birthday ? new Date(form.birthday).toISOString() : null,
     };
 
-    fetch("https://api-lkdt.thanhcom.site/account/create", {
+    fetch("https://api-lkdt.thanhtrang.online/account/create", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -177,7 +177,7 @@ export default function AccountPage() {
       body.password = form.password;
     }
 
-    fetch(`https://api-lkdt.thanhcom.site/account/update/${editing.id}`, {
+    fetch(`https://api-lkdt.thanhtrang.online/account/update/${editing.id}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -196,7 +196,7 @@ export default function AccountPage() {
   const handleDelete = () => {
     if (!confirmDelete) return;
 
-    fetch(`https://api-lkdt.thanhcom.site/account/delete/${confirmDelete.id}`, {
+    fetch(`https://api-lkdt.thanhtrang.online/account/delete/${confirmDelete.id}`, {
       method: "DELETE",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -210,7 +210,7 @@ export default function AccountPage() {
   /* ================= TOGGLE ACTIVE ================= */
 
   const toggleActive = (acc: Account) => {
-    fetch(`https://api-lkdt.thanhcom.site/account/toggle-active/${acc.id}`, {
+    fetch(`https://api-lkdt.thanhtrang.online/account/toggle-active/${acc.id}`, {
       method: "PUT",
       headers: {
         Authorization: `Bearer ${token}`,

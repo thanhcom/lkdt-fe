@@ -18,7 +18,7 @@ export default function AddSupplier() {
   const update = (k: string, v: string) => setForm({ ...form, [k]: v });
 
   const submit = async () => {
-    const res = await fetch("https://api-lkdt.thanhcom.site/supplier/create", {
+    const res = await fetch("https://api-lkdt.thanhtrang.online/supplier/create", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

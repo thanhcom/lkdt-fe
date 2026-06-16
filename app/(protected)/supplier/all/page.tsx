@@ -78,7 +78,7 @@ const SupplierTable = ({
               if (!confirm(`Xoá Supplier ${id}?`)) return;
 
               const res = await fetch(
-                `https://api-lkdt.thanhcom.site/supplier/delete/${id}`,
+                `https://api-lkdt.thanhtrang.online/supplier/delete/${id}`,
                 {
                   method: "DELETE",
                   headers: {
@@ -214,7 +214,7 @@ export default function SupplierPage() {
       }
 
       const res = await fetch(
-        `https://api-lkdt.thanhcom.site/supplier/search?${query}`,
+        `https://api-lkdt.thanhtrang.online/supplier/search?${query}`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,

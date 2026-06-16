@@ -69,7 +69,7 @@ export default function CreateImportPage() {
         const token = getToken();
 
         const res = await fetch(
-          `https://api-lkdt.thanhcom.site/supplier/search?keyword=${encodeURIComponent(
+          `https://api-lkdt.thanhtrang.online/supplier/search?keyword=${encodeURIComponent(
             supplierSearch
           )}`,
           {
@@ -118,7 +118,7 @@ export default function CreateImportPage() {
         const token = getToken();
 
         const res = await fetch(
-          `https://api-lkdt.thanhcom.site/components/search?keyword=${encodeURIComponent(
+          `https://api-lkdt.thanhtrang.online/components/search?keyword=${encodeURIComponent(
             searchTerm
           )}`,
           {
@@ -216,7 +216,7 @@ export default function CreateImportPage() {
         };
 
         const res = await fetch(
-          `https://api-lkdt.thanhcom.site/component-supplier`,
+          `https://api-lkdt.thanhtrang.online/component-supplier`,
           {
             method: "POST",
             headers: {

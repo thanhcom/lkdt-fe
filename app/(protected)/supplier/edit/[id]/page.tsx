@@ -18,7 +18,7 @@ export default function EditSupplier() {
 
     const fetchData = async () => {
       const res = await fetch(
-        `https://api-lkdt.thanhcom.site/supplier/${id}`,
+        `https://api-lkdt.thanhtrang.online/supplier/${id}`,
         { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
       );
       const json = await res.json();
@@ -34,7 +34,7 @@ export default function EditSupplier() {
 
   const handleSave = async () => {
     setSaving(true);
-    const res = await fetch(`https://api-lkdt.thanhcom.site/supplier/edit/${id}`, {
+    const res = await fetch(`https://api-lkdt.thanhtrang.online/supplier/edit/${id}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",

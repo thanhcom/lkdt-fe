@@ -33,7 +33,7 @@ export default function UpdateSchematicPage() {
     const fetchData = async () => {
       if (!schematicId || !token) return;
       try {
-        const res = await axios.get(`https://api-lkdt.thanhcom.site/schematic/${schematicId}`, {
+        const res = await axios.get(`https://api-lkdt.thanhtrang.online/schematic/${schematicId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = res.data.data;
@@ -86,7 +86,7 @@ export default function UpdateSchematicPage() {
       if (form.schematicFile) data.append("schematicFile", form.schematicFile);
       form.schematicImages.forEach((file) => data.append("schematicImages", file));
 
-      await axios.put(`https://api-lkdt.thanhcom.site/schematic/${schematicId}`, data, {
+      await axios.put(`https://api-lkdt.thanhtrang.online/schematic/${schematicId}`, data, {
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" },
         onUploadProgress: (p) => {
           const percent = Math.round((p.loaded * 100) / (p.total ?? 1));

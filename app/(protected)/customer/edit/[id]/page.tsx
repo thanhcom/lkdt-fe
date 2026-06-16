@@ -58,7 +58,7 @@ export default function EditCustomerPage() {
       if (!token) throw new Error("No token");
 
       const res = await fetch(
-        `https://api-lkdt.thanhcom.site/customer/${encodeURIComponent(id)}`,
+        `https://api-lkdt.thanhtrang.online/customer/${encodeURIComponent(id)}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -122,7 +122,7 @@ export default function EditCustomerPage() {
       };
 
       const res = await fetch(
-        `https://api-lkdt.thanhcom.site/customer/${encodeURIComponent(id)}`,
+        `https://api-lkdt.thanhtrang.online/customer/${encodeURIComponent(id)}`,
         {
           method: "PUT",
           headers: {

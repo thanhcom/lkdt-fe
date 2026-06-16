@@ -25,7 +25,7 @@ export default function ForgotPasswordClient() {
 
     try {
       const res = await fetch(
-        "https://api-lkdt.thanhcom.site/account/forgot-password",
+        "https://api-lkdt.thanhtrang.online/account/forgot-password",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

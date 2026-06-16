@@ -157,7 +157,7 @@ const OrdersTable = ({
 
               try {
                 const res = await fetch(
-                  `https://api-lkdt.thanhcom.site/orders/delete/${id}`,
+                  `https://api-lkdt.thanhtrang.online/orders/delete/${id}`,
                   {
                     method: "DELETE",
                     headers: {
@@ -298,7 +298,7 @@ export default function OrdersPage() {
       }
 
       const res = await fetch(
-        `https://api-lkdt.thanhcom.site/orders/search?${query}`,
+        `https://api-lkdt.thanhtrang.online/orders/search?${query}`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -324,7 +324,7 @@ export default function OrdersPage() {
       const to = new Date(end).toISOString();
 
       const res = await fetch(
-        `https://api-lkdt.thanhcom.site/orders/search?dateFrom=${encodeURIComponent(
+        `https://api-lkdt.thanhtrang.online/orders/search?dateFrom=${encodeURIComponent(
           from
         )}&dateTo=${encodeURIComponent(to)}`,
         {

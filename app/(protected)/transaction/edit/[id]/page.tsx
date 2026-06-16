@@ -35,7 +35,7 @@ export default function EditTransaction() {
     const fetchTransaction = async () => {
       try {
         const res = await fetch(
-          `https://api-lkdt.thanhcom.site/transaction/${transactionId}`,
+          `https://api-lkdt.thanhtrang.online/transaction/${transactionId}`,
           { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
         );
         const json = await res.json();
@@ -63,7 +63,7 @@ export default function EditTransaction() {
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        const res = await fetch("https://api-lkdt.thanhcom.site/project/all", {
+        const res = await fetch("https://api-lkdt.thanhtrang.online/project/all", {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
         const json = await res.json();
@@ -85,7 +85,7 @@ export default function EditTransaction() {
     const timeout = setTimeout(async () => {
       try {
         const res = await fetch(
-          `https://api-lkdt.thanhcom.site/components/search?keyword=${encodeURIComponent(
+          `https://api-lkdt.thanhtrang.online/components/search?keyword=${encodeURIComponent(
             componentSearch
           )}`,
           {
@@ -117,7 +117,7 @@ export default function EditTransaction() {
 
     try {
       const res = await fetch(
-        `https://api-lkdt.thanhcom.site/transaction/update/${transactionId}`,
+        `https://api-lkdt.thanhtrang.online/transaction/update/${transactionId}`,
         {
           method: "PUT",
           headers: {
