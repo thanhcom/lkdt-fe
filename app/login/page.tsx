@@ -43,6 +43,7 @@ export default function LoginPage() {
       const data: LoginResponse = await login(payload);
       localStorage.setItem("token", data.token);
       localStorage.setItem("refreshToken", data.refresh_token);
+      console.log("Đăng nhập thành công:", data);
       router.push("/component");
     } catch (err) {
       if (err instanceof Error) setError(err.message);

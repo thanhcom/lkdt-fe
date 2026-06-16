@@ -1,108 +1,72 @@
 "use client";
 
-import { ReactNode, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter, usePathname } from "next/navigation";
+import axiosClient from "@/lib/axios";
 
-interface AuthGuardProps {
-  children: ReactNode;
-  redirectIfUnauthenticatedTo?: string;
-}
-
-function parseJwt(token: string) {
-  try {
-    const base64Payload = token.split(".")[1];
-    const payload = atob(base64Payload);
-    return JSON.parse(payload);
-  } catch {
-    return null;
-  }
-}
-
-function isTokenExpired(token: string): boolean {
-  const payload = parseJwt(token);
-  if (!payload?.exp) return true;
-  const now = Math.floor(Date.now() / 1000);
-  return payload.exp < now;
-}
-
-export default function AuthGuard({
-  children,
-  redirectIfUnauthenticatedTo = "/login",
-}: AuthGuardProps) {
+export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const [status, setStatus] = useState<"checking" | "ok">("checking");
-
-  const getToken = () => localStorage.getItem("token");
-  const getRefreshToken = () => localStorage.getItem("refreshToken");
+  const pathname = usePathname();
+  const [isVerified, setIsVerified] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let active = true;
+    const publicPages = ["/login", "/forgot-password", "/reset-password"];
 
     const checkAuth = async () => {
-      const token = getToken();
-      const refreshToken = getRefreshToken();
+      const token = localStorage.getItem("token");
 
-      // Không có token -> thử refresh nếu có refreshToken
+      // 1. Nếu là trang công khai
+      if (publicPages.includes(pathname)) {
+        // Nếu đã có token mà cố vào trang login thì đá vào trong
+        if (token) {
+          router.replace("/component"); // hoặc trang chủ của bạn
+          return;
+        }
+        setIsVerified(true);
+        setLoading(false);
+        return;
+      }
+
+      // 2. Nếu trang bảo mật mà không có token
       if (!token) {
-        if (refreshToken) {
-          return attemptRefresh(refreshToken);
-        }
-        return forceLogout();
+        setIsVerified(false);
+        setLoading(false);
+        router.replace("/login");
+        return;
       }
 
-      // Token có nhưng hết hạn -> refresh
-      if (isTokenExpired(token)) {
-        if (refreshToken) {
-          return attemptRefresh(refreshToken);
-        }
-        return forceLogout();
-      }
-
-      // Token còn hạn
-      if (active) setStatus("ok");
-    };
-
-    const attemptRefresh = async (refreshToken: string) => {
       try {
-        const res = await fetch(
-          "https://api-lkdt.thanhcom.site/auth/refresh-token",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ refresh_token: refreshToken }),
-          }
-        );
-
-        const data = await res.json();
-
-        if (!res.ok || !data.data?.token) throw new Error("Refresh failed");
-
-        // 👉 Cập nhật token mới
-        localStorage.setItem("token", data.data.token);
-
-        if (active) setStatus("ok");
-      } catch {
-        forceLogout();
+        // Gọi API check token
+        await axiosClient.post("/auth/check_token", {
+          token: localStorage.getItem("token"),
+        });
+        setIsVerified(true);
+      } catch (error: any) {
+        console.error("Xác thực thất bại:", error);
+        localStorage.removeItem("token");
+        localStorage.removeItem("refreshToken");
+        setIsVerified(false);
+        router.replace("/login");
+      } finally {
+        setLoading(false);
       }
-    };
-
-    const forceLogout = () => {
-      localStorage.removeItem("token");
-      localStorage.removeItem("refreshToken");
-      router.replace(redirectIfUnauthenticatedTo);
     };
 
     checkAuth();
+    // Bỏ hasChecked.current đi để nó re-check khi pathname thay đổi (từ login sang protected)
+  }, [pathname, router]);
 
-    return () => {
-      active = false;
-    };
-  }, [redirectIfUnauthenticatedTo, router]);
-
-  if (status === "checking") {
+  // Nếu đang load hoặc chưa xác thực xong thì hiện loading
+  if (loading || !isVerified) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <div>Đang kiểm tra đăng nhập...</div>
+      <div className="flex h-screen items-center justify-center bg-white">
+        <div className="text-center">
+          <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="mt-4 text-gray-500 font-medium">
+            Đang kiểm tra quyền truy cập...
+          </p>
+        </div>
       </div>
     );
   }
